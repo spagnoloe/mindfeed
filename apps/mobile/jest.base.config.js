@@ -1,6 +1,6 @@
 // Packages shipped untranspiled, which Jest must run through Babel. Matches pnpm's
 // node_modules/.pnpm/<pkg>@<version>/node_modules/<pkg> layout too.
-const transpiled = [
+const untranspiledPackages = [
   '(jest-)?react-native',
   '@react-native(-community)?',
   'expo(nent)?',
@@ -15,5 +15,5 @@ const transpiled = [
 
 module.exports = {
   preset: 'jest-expo',
-  transformIgnorePatterns: [`node_modules/(?!(?:\\.pnpm/[^/]+/node_modules/)?(${transpiled.join('|')})/)`],
+  transformIgnorePatterns: [`node_modules/(?!(?:\\.pnpm/[^/]+/node_modules/)?(${untranspiledPackages.join('|')})/)`],
 };

@@ -6,7 +6,7 @@ Interesting ideas from great books, one at a time. An Expo (React Native) app on
 
 - `apps/mobile`: the Expo app (expo-router, TypeScript).
 - `packages/content`: the master copy of Topics, Books and Ideas.
-- `supabase`: the local Supabase project (config, migrations, seed).
+- `supabase`: the local Supabase project (`config.toml`; migrations and seed arrive with later tickets).
 
 Screens reach Supabase only through the `Backend` in `apps/mobile/src/backend`. See [ADR-0001](docs/adr/0001-supabase-behind-async-repositories.md).
 

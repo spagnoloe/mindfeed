@@ -1,11 +1,11 @@
 import { execSync } from 'node:child_process';
 import path from 'node:path';
 
-import { createSupabaseBackend } from '../supabase';
+import { createSupabaseBackend, type SupabaseBackendOptions } from '../supabase';
 import { describeBackendContract } from './backendContract';
 
 /** Connection details of the local Supabase started with `supabase start` at the repo root. */
-function localSupabase(): { url: string; anonKey: string } {
+function localSupabase(): SupabaseBackendOptions {
   const repoRoot = path.resolve(__dirname, '../../../../..');
   let output: string;
   try {

@@ -5,7 +5,7 @@ import type { Backend } from './types';
 export type SupabaseBackendOptions = {
   url: string;
   anonKey: string;
-  /** Where the session is kept between launches. Omit to keep it in memory only. */
+  /** Where the session is kept between launches. Omit (e.g. in tests) to keep it in memory, without background token refresh. */
   storage?: SupportedStorage;
 };
 
@@ -14,7 +14,7 @@ export function createSupabaseBackend({ url, anonKey, storage }: SupabaseBackend
     auth: {
       storage,
       persistSession: storage !== undefined,
-      autoRefreshToken: true,
+      autoRefreshToken: storage !== undefined,
       detectSessionInUrl: false,
     },
   });
