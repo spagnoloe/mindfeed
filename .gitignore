@@ -1,0 +1,17 @@
+node_modules/
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+*.tsbuildinfo
+coverage/
+
+# Generated native projects (Continuous Native Generation)
+apps/mobile/android/
+apps/mobile/ios/
+
+# Local env files
+.env
+.env*.local
+
+.DS_Store
