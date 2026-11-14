@@ -92,7 +92,11 @@ The phone and the Mac must be on the same Wi-Fi network.
 
 4. Scan the QR code with Expo Go on the phone.
 
-If the phone can't connect, check that macOS's firewall allows incoming connections for Node, and that the Wi-Fi doesn't isolate devices from each other (common on guest networks).
+If the phone can't reach Supabase:
+
+- **Test it from the phone with Firefox**, at `http://<Mac's IP>:54321`. A `{"message":"no route matched with those values"}` reply means Supabase is reachable. Don't test with Chrome: on Android it refuses local `http://` addresses (`ERR_TOO_MANY_RETRIES`), even when the app would connect fine.
+- **macOS Local Network permission**: in System Settings → Privacy & Security → Local Network, turn on Docker (and your terminal app), then quit and reopen Docker Desktop and run `supabase start` again. Docker only picks up the permission when it restarts.
+- **Same network**: the phone's IP should start the same way as the Mac's (e.g. `192.168.1.`). Guest Wi-Fi networks usually keep devices apart, and so does a VPN on the phone.
 
 ## Checks
 
