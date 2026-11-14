@@ -9,7 +9,8 @@
     "typecheck": "pnpm -r typecheck",
     "lint": "eslint .",
     "test": "pnpm -r test",
-    "test:contract": "pnpm --filter mobile test:contract"
+    "test:contract": "pnpm --filter mobile test:contract",
+    "seed:generate": "pnpm --filter @mindfeed/content seed:generate"
   },
   "devDependencies": {
     "eslint": "^9.39.5",
