@@ -12,8 +12,7 @@ module.exports = defineConfig([
   {
     // ADR-0001: screens reach Supabase only through the Backend.
     files: ['apps/mobile/**/*.{ts,tsx}'],
-    // The content-tables contract test checks database access rules, below the Backend.
-    ignores: ['apps/mobile/src/backend/supabase.ts', 'apps/mobile/src/backend/contract/contentTables.contract.test.ts'],
+    ignores: ['apps/mobile/src/backend/supabase.ts'],
     rules: {
       'no-restricted-imports': [
         'error',

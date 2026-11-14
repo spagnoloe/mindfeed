@@ -9,7 +9,7 @@
     "typecheck": "pnpm -r typecheck",
     "lint": "eslint .",
     "test": "pnpm -r test",
-    "test:contract": "pnpm --filter mobile test:contract",
+    "test:contract": "pnpm --filter mobile test:contract && pnpm --filter @mindfeed/content test:contract",
     "seed:generate": "pnpm --filter @mindfeed/content seed:generate"
   },
   "devDependencies": {
