@@ -137,6 +137,11 @@ export function describeBackendContract(name: string, makeBackend: () => Backend
       await expect(backend.userData.like(ideaId)).rejects.toThrow();
       await expect(backend.userData.unlike(ideaId)).rejects.toThrow();
       await expect(backend.userData.isLiked(ideaId)).rejects.toThrow();
+      await expect(backend.userData.getStacks()).rejects.toThrow();
+      await expect(backend.userData.createStack({ name: 'Work', ideaId })).rejects.toThrow();
+      await expect(backend.userData.addToStack(crypto.randomUUID(), ideaId)).rejects.toThrow();
+      await expect(backend.userData.removeFromStack(crypto.randomUUID(), ideaId)).rejects.toThrow();
+      await expect(backend.userData.getStacksWith(ideaId)).rejects.toThrow();
     });
 
     describe('Likes', () => {
@@ -202,6 +207,104 @@ export function describeBackendContract(name: string, makeBackend: () => Backend
 
       await backend.auth.logIn(maya);
       expect((await backend.userData.getLikedIdeas()).map((idea) => idea.id)).toEqual([first]);
+    });
+
+    describe('Stacks', () => {
+      const [first, second, third] = content.ideas;
+      const topicOf = (idea: (typeof content.ideas)[number]) => {
+        const { id, name, hue } = content.topics.find((topic) => topic.id === idea.topicId)!;
+        return { id, name, hue };
+      };
+
+      beforeEach(async () => {
+        await backend.auth.signUp(newAccount());
+      });
+
+      test('a new account has none', async () => {
+        await expect(backend.userData.getStacks()).resolves.toEqual([]);
+        await expect(backend.userData.getStacksWith(first.id)).resolves.toEqual([]);
+      });
+
+      test('creating a Stack with an Idea gives a Stack holding it, tinted by its Topic', async () => {
+        const stack = await backend.userData.createStack({ name: '  Thinking better ', description: ' Mental models ', ideaId: first.id });
+
+        expect(stack).toEqual({ id: expect.any(String), name: 'Thinking better', description: 'Mental models', ideaCount: 1, firstTopic: topicOf(first) });
+        await expect(backend.userData.getStacks()).resolves.toEqual([stack]);
+        await expect(backend.userData.getStacksWith(first.id)).resolves.toEqual([stack.id]);
+      });
+
+      test('a Stack created without an Idea or description is empty and untinted', async () => {
+        const stack = await backend.userData.createStack({ name: 'Work' });
+
+        expect(stack).toEqual({ id: expect.any(String), name: 'Work', description: '', ideaCount: 0, firstTopic: null });
+      });
+
+      test('Stacks are newest first', async () => {
+        const older = await backend.userData.createStack({ name: 'Older' });
+        const newer = await backend.userData.createStack({ name: 'Newer' });
+        const newest = await backend.userData.createStack({ name: 'Newest' });
+
+        expect((await backend.userData.getStacks()).map((stack) => stack.id)).toEqual([newest.id, newer.id, older.id]);
+      });
+
+      test('a blank name is rejected and creates nothing', async () => {
+        await expect(backend.userData.createStack({ name: '   ', ideaId: first.id })).rejects.toThrow();
+
+        await expect(backend.userData.getStacks()).resolves.toEqual([]);
+        await expect(backend.userData.getStacksWith(first.id)).resolves.toEqual([]);
+      });
+
+      test('adding and removing Ideas changes the count and which Stacks hold them, and the first Idea added tints the Stack', async () => {
+        const work = await backend.userData.createStack({ name: 'Work' });
+        const reading = await backend.userData.createStack({ name: 'Reading', ideaId: second.id });
+
+        await backend.userData.addToStack(work.id, second.id);
+        await backend.userData.addToStack(work.id, third.id);
+
+        const [readingNow, workNow] = await backend.userData.getStacks();
+        expect(workNow).toMatchObject({ id: work.id, ideaCount: 2, firstTopic: topicOf(second) });
+        expect(readingNow).toMatchObject({ id: reading.id, ideaCount: 1 });
+        expect([...(await backend.userData.getStacksWith(second.id))].sort()).toEqual([work.id, reading.id].sort());
+
+        await backend.userData.removeFromStack(work.id, second.id);
+
+        const [, workAfter] = await backend.userData.getStacks();
+        expect(workAfter).toMatchObject({ ideaCount: 1, firstTopic: topicOf(third) });
+        await expect(backend.userData.getStacksWith(second.id)).resolves.toEqual([reading.id]);
+      });
+
+      test('adding twice keeps one, in its first place, and removing twice is harmless', async () => {
+        const stack = await backend.userData.createStack({ name: 'Work', ideaId: first.id });
+
+        await backend.userData.addToStack(stack.id, second.id);
+        await backend.userData.addToStack(stack.id, first.id);
+        await backend.userData.addToStack(stack.id, second.id);
+        expect((await backend.userData.getStacks())[0]).toMatchObject({ ideaCount: 2, firstTopic: topicOf(first) });
+
+        await backend.userData.removeFromStack(stack.id, second.id);
+        await backend.userData.removeFromStack(stack.id, second.id);
+        await backend.userData.removeFromStack(stack.id, third.id);
+        expect((await backend.userData.getStacks())[0]).toMatchObject({ ideaCount: 1 });
+      });
+    });
+
+    test("each user sees and changes only their own Stacks", async () => {
+      const [first, second] = content.ideas.map((idea) => idea.id);
+      const maya = newAccount();
+      await backend.auth.signUp(maya);
+      const mayas = await backend.userData.createStack({ name: 'Thinking better', ideaId: first });
+      await backend.auth.logOut();
+
+      await backend.auth.signUp(newAccount());
+      await expect(backend.userData.getStacks()).resolves.toEqual([]);
+      await expect(backend.userData.getStacksWith(first)).resolves.toEqual([]);
+      await expect(backend.userData.addToStack(mayas.id, second)).rejects.toThrow();
+      await backend.userData.removeFromStack(mayas.id, first);
+      await backend.auth.logOut();
+
+      await backend.auth.logIn(maya);
+      await expect(backend.userData.getStacks()).resolves.toEqual([mayas]);
+      await expect(backend.userData.getStacksWith(first)).resolves.toEqual([mayas.id]);
     });
 
     describe('Home feed', () => {

@@ -116,7 +116,30 @@ export interface UserDataRepository {
   unlike(ideaId: string): Promise<void>;
   /** Whether the user has liked the Idea; false for an Idea that doesn't exist. */
   isLiked(ideaId: string): Promise<boolean>;
+  /** The user's Stacks, newest first. */
+  getStacks(): Promise<StackSummary[]>;
+  /** Creates a Stack, holding `ideaId` if given. Rejects, creating nothing, when the name is blank. The name and description are trimmed. */
+  createStack(details: NewStack): Promise<StackSummary>;
+  /** Adds the Idea to one of the user's Stacks. Adding it again changes nothing. Rejects for a Stack that isn't the user's. */
+  addToStack(stackId: string, ideaId: string): Promise<void>;
+  /** Takes the Idea out of the Stack. Removing an Idea that isn't there, or from a Stack that isn't the user's, changes nothing. */
+  removeFromStack(stackId: string, ideaId: string): Promise<void>;
+  /** The ids of the user's Stacks that hold the Idea, in no particular order. */
+  getStacksWith(ideaId: string): Promise<string[]>;
 }
+
+/** A Stack as lists show it, without its Ideas. */
+export type StackSummary = {
+  id: string;
+  name: string;
+  /** Empty when the Stack has none. */
+  description: string;
+  ideaCount: number;
+  /** The Topic of the Idea added to the Stack first, which tints the Stack's icon; null for an empty Stack. */
+  firstTopic: Topic | null;
+};
+
+export type NewStack = { name: string; description?: string; ideaId?: string };
 
 export type Backend = {
   auth: AuthService;

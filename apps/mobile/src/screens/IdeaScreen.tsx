@@ -1,8 +1,10 @@
 import { useLocalSearchParams } from 'expo-router';
+import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { useBook, useIdea } from '@/backend/content';
 import { useIsLiked, useToggleLike } from '@/backend/likes';
+import { useStacksWith } from '@/backend/stacks';
 import { BackHeader } from '@/design/BackHeader';
 import { BookCover } from '@/design/BookCover';
 import { Icon } from '@/design/Icon';
@@ -12,12 +14,14 @@ import { ScreenStatus } from '@/design/ScreenStatus';
 import { palette, textStyle, topicTint } from '@/design/theme';
 import { useOpenInTab } from '@/navigation/useOpenInTab';
 
+import { AddToStack } from './AddToStack';
 import { ideaCount } from './ideaCount';
 
 /**
  * Idea Detail, pushed within the current tab. The Topic chip and the Source card open the Topic
  * and the Book. Like likes or unlikes the Idea at once, with no confirmation, and turns ink-filled
- * "Liked" while liked. Add to stack is shown but does nothing yet.
+ * "Liked" while liked. Add to stack opens the Add to stack sheet, and reads "In N stacks" once
+ * the Idea is filed.
  */
 export function IdeaScreen() {
   const { openTopic, openBook } = useOpenInTab();
@@ -26,6 +30,8 @@ export function IdeaScreen() {
   const book = useBook(idea.data?.book.id);
   const liked = useIsLiked(id);
   const toggleLike = useToggleLike();
+  const stackCount = useStacksWith(id).length;
+  const [picking, setPicking] = useState(false);
 
   return (
     <View style={styles.screen}>
@@ -77,8 +83,15 @@ export function IdeaScreen() {
               onPress={() => toggleLike.mutate({ idea: idea.data, like: !liked })}
               style={styles.action}
             />
-            <PillButton label="Add to stack" icon="library_add" size="bar" onPress={() => {}} style={styles.action} />
+            <PillButton
+              label={stackCount > 0 ? `In ${stackCount} ${stackCount === 1 ? 'stack' : 'stacks'}` : 'Add to stack'}
+              icon="library_add"
+              size="bar"
+              onPress={() => setPicking(true)}
+              style={styles.action}
+            />
           </View>
+          {picking && <AddToStack idea={idea.data} onClose={() => setPicking(false)} />}
         </>
       )}
     </View>

@@ -1,9 +1,23 @@
 import { content } from '@mindfeed/content';
 
-import { AuthError, MAX_FEED_PAGE, MIN_INTERESTS, type Backend, type Book, type Idea, type Profile, type Session, type Topic } from './types';
+import {
+  AuthError,
+  MAX_FEED_PAGE,
+  MIN_INTERESTS,
+  type Backend,
+  type Book,
+  type Idea,
+  type Profile,
+  type Session,
+  type StackSummary,
+  type Topic,
+} from './types';
 
-/** `likes` holds Idea ids, newest first. */
-type Account = { session: Session; password: string; profile: Profile; interests: string[]; likes: string[] };
+/** A Stack's `ideas` are Idea ids, first added first. */
+type Stack = { id: string; name: string; description: string; ideas: string[] };
+
+/** `likes` holds Idea ids, newest first; `stacks` holds Stacks, newest first. */
+type Account = { session: Session; password: string; profile: Profile; interests: string[]; likes: string[]; stacks: Stack[] };
 
 const topics = content.topics
   .map(({ id, name, hue }) => ({ id, name, hue }))
@@ -25,6 +39,20 @@ const byTitle = (a: Idea, b: Idea) => (a.title < b.title ? -1 : a.title > b.titl
 
 /** A copy, so callers can't change the fake's content. */
 const copy = (idea: Idea): Idea => ({ ...idea, topic: { ...idea.topic }, book: { ...idea.book } });
+
+const ideaById = (ideaId: string) => {
+  const idea = ideas.find((candidate) => candidate.id === ideaId);
+  if (!idea) throw new Error(`No Idea ${ideaId}`);
+  return idea;
+};
+
+const summarise = ({ id, name, description, ideas: ideaIds }: Stack): StackSummary => ({
+  id,
+  name,
+  description,
+  ideaCount: ideaIds.length,
+  firstTopic: ideaIds.length > 0 ? { ...ideaById(ideaIds[0]).topic } : null,
+});
 
 /** 32-bit FNV-1a: a stable, seedable shuffle key. Supabase uses md5 instead; only the properties match. */
 function shuffleKey(seed: string, id: string): number {
@@ -58,7 +86,7 @@ export function createFakeBackend(): Backend {
       async signUp({ name, email, password }) {
         if (accounts.has(email)) throw new AuthError('email-taken');
         const session = { userId: crypto.randomUUID(), email };
-        accounts.set(email, { session, password, profile: { name, bio: '' }, interests: [], likes: [] });
+        accounts.set(email, { session, password, profile: { name, bio: '' }, interests: [], likes: [], stacks: [] });
         setSession(session);
         return session;
       },
@@ -131,6 +159,32 @@ export function createFakeBackend(): Backend {
       },
       async isLiked(ideaId) {
         return signedInAccount().likes.includes(ideaId);
+      },
+      async getStacks() {
+        return signedInAccount().stacks.map(summarise);
+      },
+      async createStack({ name, description = '', ideaId }) {
+        const account = signedInAccount();
+        if (!name.trim()) throw new Error('A Stack needs a name');
+        if (ideaId !== undefined) ideaById(ideaId);
+        const stack = { id: crypto.randomUUID(), name: name.trim(), description: description.trim(), ideas: ideaId ? [ideaId] : [] };
+        account.stacks.unshift(stack);
+        return summarise(stack);
+      },
+      async addToStack(stackId, ideaId) {
+        const stack = signedInAccount().stacks.find((candidate) => candidate.id === stackId);
+        if (!stack) throw new Error(`No Stack ${stackId}`);
+        ideaById(ideaId);
+        if (!stack.ideas.includes(ideaId)) stack.ideas.push(ideaId);
+      },
+      async removeFromStack(stackId, ideaId) {
+        const stack = signedInAccount().stacks.find((candidate) => candidate.id === stackId);
+        if (stack) stack.ideas = stack.ideas.filter((id) => id !== ideaId);
+      },
+      async getStacksWith(ideaId) {
+        return signedInAccount()
+          .stacks.filter((stack) => stack.ideas.includes(ideaId))
+          .map((stack) => stack.id);
       },
     },
   };
