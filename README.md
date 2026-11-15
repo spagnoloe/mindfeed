@@ -144,8 +144,10 @@ Friends install an APK from a link. JavaScript-only fixes then reach their phone
 4. **Schema and content:**
 
    ```sh
-   supabase db push --include-seed
+   supabase db push --remote --include-seed
    ```
+
+   Without `--remote`, the Supabase CLI targets the local database and prints "Local database is up to date". Check that the first line of output says `Target: project mindfeed`.
 
 5. **EAS project:**
 
@@ -195,7 +197,7 @@ Edit `packages/content` as in **Changing the content**, then:
 
 ```sh
 pnpm seed:generate
-supabase db push --include-seed
+supabase db push --remote --include-seed
 ```
 
 The seed only inserts and updates Topics, Books and Ideas, so re-running it is harmless and never touches profiles, Likes or Stacks. It never deletes either: a row removed from `packages/content` stays in production until you delete it by hand.
@@ -205,7 +207,7 @@ The seed only inserts and updates Topics, Books and Ideas, so re-running it is h
 Add a migration under `supabase/migrations`, check it locally with `supabase db reset`, then:
 
 ```sh
-supabase db push
+supabase db push --remote
 ```
 
 If the app's code depends on the new schema, push the migration before you publish the update or build that uses it.
