@@ -18,8 +18,8 @@ export default function TabsLayout() {
   return (
     <Tabs
       tabBar={(props) => <TabBar {...props} icons={TAB_ICONS} />}
-      // Android back leaves a tab's first screen for Home, then exits the app.
-      backBehavior="firstRoute"
+      // Android back from a tab's first screen returns to the previously visited tab.
+      backBehavior="history"
       screenOptions={{
         headerShown: false,
         // The real status bar replaces the prototype's drawn one, so screens start below it.

@@ -52,6 +52,24 @@ test('the tab bar switches between the four tabs', async () => {
   expect(await screen.findByText('mindfeed.')).toBeOnTheScreen();
 });
 
+test('going back from a tab returns to the tabs visited before it, in order', async () => {
+  const user = userEvent.setup();
+  await renderApp();
+  await screen.findByText('mindfeed.');
+  await user.press(tab('Library'));
+  await screen.findByText('library.');
+  await user.press(tab('Profile'));
+  await screen.findByText('profile.');
+
+  // Android back runs the same navigation action as router.back(); Jest can't press the hardware key.
+  await act(() => router.back());
+  expect(await screen.findByText('library.')).toBeOnTheScreen();
+  expect(tab('Library')).toBeSelected();
+
+  await act(() => router.back());
+  expect(await screen.findByText('mindfeed.')).toBeOnTheScreen();
+});
+
 describe('each tab has its own history', () => {
   async function openDeeperScreenInExplore() {
     const user = userEvent.setup();
