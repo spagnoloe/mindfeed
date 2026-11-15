@@ -1,6 +1,7 @@
 import { screen, userEvent } from '@testing-library/react-native';
 
 import { backend } from '@/backend/instance';
+import { AuthError } from '@/backend/types';
 import { renderApp, settlePress } from '@/testing/renderApp';
 
 // The real app, with the fake Backend in place of Supabase.
@@ -88,6 +89,21 @@ describe('the Sign up / Log in form', () => {
 
     expect(await screen.findByText('Incorrect email or password.')).toBeOnTheScreen();
     await expect(backend.auth.getSession()).resolves.toBeNull();
+  });
+
+  test('a log-in that fails for another reason, such as a lost connection, says so rather than blaming the password', async () => {
+    const email = newEmail();
+    await backend.auth.signUp({ name: 'Maya Lin', email, password: 'readmore' });
+    await backend.auth.logOut();
+    // What the Supabase Backend raises when the request never reaches the server.
+    jest.spyOn(backend.auth, 'logIn').mockRejectedValueOnce(new AuthError('unknown', 'Failed to fetch'));
+    const user = await openForm('Log in');
+
+    await fillAuthForm(user, { email, password: 'readmore' });
+    await user.press(button('Log in'));
+
+    expect(await screen.findByText('Something went wrong. Please try again.')).toBeOnTheScreen();
+    expect(screen.queryByText('Incorrect email or password.')).not.toBeOnTheScreen();
   });
 
   test('logging in with an invalid email or a short password shows the prototype\'s errors', async () => {

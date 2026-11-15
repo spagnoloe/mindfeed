@@ -29,9 +29,12 @@ function validate(mode: Mode, form: { name: string; email: string; password: str
 
 /** What to show when the Backend turns the form down. The prototype has no copy for sign-up failures. */
 function failureMessage(mode: Mode, error: unknown): string {
-  // Any failed log-in reads the same, so the app never reveals which accounts exist.
-  if (mode === 'login') return LOG_IN_FAILED;
-  if (error instanceof AuthError && error.code === 'email-taken') return 'An account with this email already exists.';
+  const code = error instanceof AuthError ? error.code : 'unknown';
+  // A wrong password and an unknown email read the same (the Backend reports both as
+  // invalid-credentials), so the app never reveals which accounts exist. Anything else, such as
+  // a lost connection, isn't the user's typing, so it doesn't say it is.
+  if (mode === 'login' && code === 'invalid-credentials') return LOG_IN_FAILED;
+  if (mode === 'signup' && code === 'email-taken') return 'An account with this email already exists.';
   return 'Something went wrong. Please try again.';
 }
 

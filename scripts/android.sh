@@ -21,6 +21,7 @@ Usage: scripts/android.sh <command>
   shot <file>    Screenshot the emulator at 1px per dp, the design's scale
   tap <x> <y>    Tap a point measured on a shot
   text <string>  Type into the focused field
+  enter          Press the keyboard's enter key, which closes it on a single-line field
   back           Press Android back
   log            Print the end of Metro's log (app console errors show up here)
   stop           Stop Metro, and the emulator if `start` booted it
@@ -205,6 +206,7 @@ case "${1:-}" in
   tap) cmd_tap "${2:-}" "${3:-}" ;;
   text) cmd_text "${2:-}" ;;
   back) "$ADB" shell input keyevent KEYCODE_BACK ;;
+  enter) "$ADB" shell input keyevent KEYCODE_ENTER ;;
   log) tail -n 40 "$METRO_LOG" ;;
   stop) cmd_stop ;;
   *) usage; exit 1 ;;
