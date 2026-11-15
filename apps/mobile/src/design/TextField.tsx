@@ -43,11 +43,13 @@ export function TextField({ label, rows, onFocus, onBlur, ...inputProps }: TextF
 
 const styles = StyleSheet.create({
   field: { gap: 6 },
-  label: { ...textStyle(13, 600), color: palette.mut },
+  // The design's `line-height: normal`, as the browser renders it. Left unset, Android makes it 20.6.
+  label: { ...textStyle(13, 600), lineHeight: 16, color: palette.mut },
   box: { borderWidth: 1.5, borderColor: palette.line2, borderRadius: 16, backgroundColor: palette.card },
   input: { ...textStyle(16, 400), paddingHorizontal: 16, color: palette.ink },
-  // 52 tall in the design including the 1.5px border on each side.
-  singleLine: { height: 49, paddingVertical: 0 },
+  // The design's input is `height: 52px` as a content box, so the 1.5px border on each side
+  // sits outside it: 55 tall in all.
+  singleLine: { height: 52, paddingVertical: 0 },
   textarea: { ...textStyle(16, 400, { lineHeight: LINE_HEIGHT }), paddingVertical: 14, textAlignVertical: 'top' },
   focused: { borderColor: palette.ink, boxShadow: hardShadow(3) },
 });

@@ -128,5 +128,6 @@ const styles = StyleSheet.create({
   wordmark: { ...textStyle(68, 800, { lineHeight: 0.86, letterSpacing: -0.05 }), color: palette.ink },
   tagline: { ...textStyle(19, 400, { lineHeight: 1.45 }), color: palette.ink2, maxWidth: 280 },
   fields: { gap: 14 },
-  error: { ...textStyle(14, 600), color: colors.danger },
+  // The design's `line-height: normal`, as the browser renders it (see TextField's label).
+  error: { ...textStyle(14, 600), lineHeight: 17, color: colors.danger },
 });
