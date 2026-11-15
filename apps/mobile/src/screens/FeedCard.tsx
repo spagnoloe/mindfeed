@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { useIsLiked, useToggleLike } from '@/backend/likes';
+import { useStacksWith } from '@/backend/stacks';
 import type { Idea } from '@/backend/types';
 import { BookCover } from '@/design/BookCover';
 import { InkPill } from '@/design/InkPill';
@@ -8,17 +10,22 @@ import { PressableSurface } from '@/design/PressableSurface';
 import { RoundIconButton } from '@/design/RoundIconButton';
 import { colors, palette, textStyle, topicTint } from '@/design/theme';
 
+import { AddToStack } from './AddToStack';
+
 /** How many lines of the explanation a card shows. */
 const EXPLANATION_LINES = 7;
 
 /**
  * One full-height card of the Home feed, tinted by its Topic. Tapping it presses it flat onto its
  * 4px shadow, then opens the Idea; its own buttons don't. The heart likes or unlikes the Idea at
- * once, with no confirmation, and fills red while liked. Add to stack is shown but does nothing yet.
+ * once, with no confirmation, and fills red while liked. Add to stack opens the Add to stack sheet,
+ * and its icon fills while the Idea is in any Stack.
  */
 export function FeedCard({ idea, height, onOpen, testID }: { idea: Idea; height: number; onOpen: () => void; testID?: string }) {
   const liked = useIsLiked(idea.id);
   const toggleLike = useToggleLike();
+  const inStack = (useStacksWith(idea.id)?.length ?? 0) > 0;
+  const [picking, setPicking] = useState(false);
 
   return (
     <View testID={testID} style={[styles.slot, { height }]}>
@@ -47,7 +54,14 @@ export function FeedCard({ idea, height, onOpen, testID }: { idea: Idea; height:
               {idea.book.author}
             </Text>
           </View>
-          <RoundIconButton icon="library_add" iconSize={21} accessibilityLabel="Add to stack" onPress={() => {}} />
+          <RoundIconButton
+            icon="library_add"
+            iconSize={21}
+            accessibilityLabel="Add to stack"
+            selected={inStack}
+            filled={inStack}
+            onPress={() => setPicking(true)}
+          />
           <RoundIconButton
             icon="favorite"
             iconSize={21}
@@ -59,6 +73,7 @@ export function FeedCard({ idea, height, onOpen, testID }: { idea: Idea; height:
           />
         </View>
       </PressableSurface>
+      {picking && <AddToStack idea={idea} onClose={() => setPicking(false)} />}
     </View>
   );
 }

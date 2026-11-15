@@ -1,6 +1,6 @@
 import { createClient, type AuthError as SupabaseAuthError, type SupportedStorage, type User } from '@supabase/supabase-js';
 
-import { AuthError, type Backend, type Book, type Idea, type Session } from './types';
+import { AuthError, type Backend, type Book, type Idea, type Session, type StackSummary } from './types';
 
 export type SupabaseBackendOptions = {
   url: string;
@@ -60,6 +60,27 @@ const feedRowToIdea = (row: FeedRow): Idea => ({
   explanation: row.explanation,
   topic: { id: row.topic_id, name: row.topic_name, hue: row.topic_hue },
   book: { id: row.book_id, title: row.book_title, author: row.book_author, isbn: row.book_isbn, coverHue: row.book_cover_hue },
+});
+
+/** A row of the `stack_summaries` view. */
+type StackSummaryRow = {
+  id: string;
+  name: string;
+  description: string;
+  idea_count: number;
+  first_topic_id: string | null;
+  first_topic_name: string | null;
+  first_topic_hue: number | null;
+};
+
+const STACK_SUMMARY_COLUMNS = 'id, name, description, idea_count, first_topic_id, first_topic_name, first_topic_hue';
+
+const toStackSummary = (row: StackSummaryRow): StackSummary => ({
+  id: row.id,
+  name: row.name,
+  description: row.description,
+  ideaCount: row.idea_count,
+  firstTopic: row.first_topic_id === null ? null : { id: row.first_topic_id, name: row.first_topic_name!, hue: row.first_topic_hue! },
 });
 
 export function createSupabaseBackend({ url, anonKey, storage }: SupabaseBackendOptions): Backend {
@@ -192,6 +213,53 @@ export function createSupabaseBackend({ url, anonKey, storage }: SupabaseBackend
           .eq('idea_id', ideaId);
         if (error) throw dataError(error);
         return (count ?? 0) > 0;
+      },
+      async getStacks() {
+        await signedInUserId();
+        // Row-level security limits the view to the user's own Stacks.
+        const { data, error } = await client
+          .from('stack_summaries')
+          .select(STACK_SUMMARY_COLUMNS)
+          .order('created_at', { ascending: false })
+          .order('id');
+        if (error) throw dataError(error);
+        return (data as StackSummaryRow[]).map(toStackSummary);
+      },
+      async createStack({ name, description = '', ideaId }) {
+        await signedInUserId();
+        if (!name.trim()) throw new Error('A Stack needs a name');
+        const created = await client.rpc('create_stack', {
+          stack_name: name.trim(),
+          stack_description: description.trim(),
+          idea_id: ideaId ?? null,
+        });
+        if (created.error) throw dataError(created.error);
+        const { data, error } = await client
+          .from('stack_summaries')
+          .select(STACK_SUMMARY_COLUMNS)
+          .eq('id', created.data as string)
+          .single();
+        if (error) throw dataError(error);
+        return toStackSummary(data as StackSummaryRow);
+      },
+      async addToStack(stackId, ideaId) {
+        await signedInUserId();
+        // Already there: the existing row, and its place in the Stack, stay as they are.
+        const { error } = await client
+          .from('stack_ideas')
+          .upsert({ stack_id: stackId, idea_id: ideaId }, { onConflict: 'stack_id,idea_id', ignoreDuplicates: true });
+        if (error) throw dataError(error);
+      },
+      async removeFromStack(stackId, ideaId) {
+        await signedInUserId();
+        const { error } = await client.from('stack_ideas').delete().eq('stack_id', stackId).eq('idea_id', ideaId);
+        if (error) throw dataError(error);
+      },
+      async getStacksWith(ideaId) {
+        await signedInUserId();
+        const { data, error } = await client.from('stack_ideas').select('stack_id').eq('idea_id', ideaId);
+        if (error) throw dataError(error);
+        return data.map((row) => row.stack_id as string);
       },
     },
   };

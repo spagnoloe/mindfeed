@@ -35,6 +35,8 @@ export const colors = {
   danger: oklch(0.54, 0.17, 28),
   /** A liked Idea's heart on a feed card and in Liked Ideas. */
   liked: oklch(0.58, 0.18, 25),
+  /** An empty Stack's icon. */
+  emptyStack: '#efe9dd',
   /** Behind the bottom sheet and dialogs. */
   backdrop: 'rgba(31,29,26,0.32)',
 };

@@ -104,6 +104,30 @@ describe('Supabase row-level security on user data', () => {
     expect((await maya.client.from('likes').select('idea_id')).data).toEqual([{ idea_id: liked }]);
   });
 
+  test("a user can't read, create in, or change another user's Stacks", async () => {
+    const [filed, other] = content.ideas.map((idea) => idea.id);
+    const created = await maya.client.rpc('create_stack', { stack_name: 'Thinking better', idea_id: filed });
+    if (created.error) throw new Error(created.error.message);
+    const stackId = created.data as string;
+
+    expect((await sam.client.from('stacks').select('id').eq('id', stackId)).data).toEqual([]);
+    expect((await sam.client.from('stack_summaries').select('id').eq('id', stackId)).data).toEqual([]);
+    expect((await sam.client.from('stack_ideas').select('idea_id').eq('stack_id', stackId)).data).toEqual([]);
+
+    const stolen = await sam.client.from('stacks').insert({ user_id: maya.userId, name: 'Hacked' });
+    expect(stolen.error?.code).toBe('42501');
+    const inserted = await sam.client.from('stack_ideas').insert({ stack_id: stackId, idea_id: other });
+    expect(inserted.error?.code).toBe('42501');
+    const renamed = await sam.client.from('stacks').update({ name: 'Hacked' }).eq('id', stackId).select();
+    expect(renamed.data ?? []).toEqual([]);
+    const deleted = await sam.client.from('stack_ideas').delete().eq('stack_id', stackId).select();
+    expect(deleted.data).toEqual([]);
+
+    expect((await maya.client.from('stack_summaries').select('name, idea_count').eq('id', stackId)).data).toEqual([
+      { name: 'Thinking better', idea_count: 1 },
+    ]);
+  });
+
   test('nobody signed in reads no profiles, Interests or Likes', async () => {
     const anon = createClient(connection.url, connection.anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
 
