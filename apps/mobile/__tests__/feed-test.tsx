@@ -2,7 +2,7 @@ import { content } from '@mindfeed/content';
 import { act, fireEvent, screen, userEvent, within } from '@testing-library/react-native';
 
 import { backend } from '@/backend/instance';
-import { renderApp } from '@/testing/renderApp';
+import { renderApp, settlePress } from '@/testing/renderApp';
 
 // The real app, with the fake Backend in place of Supabase.
 jest.mock('@/backend/instance', () => ({
@@ -105,8 +105,9 @@ test('a card opens its Idea, whose Topic chip and Source card open the Topic and
   const back = () => screen.getByRole('button', { name: 'Back' });
 
   await user.press(screen.getByRole('button', { name: title }));
-  expect(await screen.findByText(idea.explanation)).toBeOnTheScreen();
-  expect(screen.getByText('Source')).toBeOnTheScreen();
+  // The card shows the explanation too, so wait for what only the Idea has.
+  expect(await screen.findByText('Source')).toBeOnTheScreen();
+  expect(screen.getByText(idea.explanation)).toBeOnTheScreen();
   expect(screen.getByRole('tab', { name: 'Home' })).toBeSelected();
 
   // The Topic screen lists every Idea in the Topic.
@@ -138,4 +139,21 @@ test('a card opens its Idea, whose Topic chip and Source card open the Topic and
   await user.press(back());
   expect(await screen.findByTestId('home-feed')).toBeOnTheScreen();
   expect(screen.queryByText('Source')).not.toBeOnTheScreen();
+});
+
+test('a card presses flat onto its 4px shadow before it opens, but its own buttons don\'t open it', async () => {
+  const { user } = await openHome();
+  const card = within(screen.getByTestId('feed-card-0'));
+  const title = card.getByRole('header').props.children as string;
+  const surface = screen.getByRole('button', { name: title });
+  expect(surface).toHaveStyle({ boxShadow: '4px 4px 0px #1f1d1a', transform: [{ translateX: 0 }, { translateY: 0 }] });
+
+  await user.press(card.getByRole('button', { name: 'Like' }));
+  await settlePress();
+  expect(screen.queryByText('Source')).not.toBeOnTheScreen();
+
+  await user.press(surface);
+  expect(surface).toHaveStyle({ boxShadow: '0px 0px 0px #1f1d1a', transform: [{ translateX: 4 }, { translateY: 4 }] });
+  expect(screen.queryByText('Source')).not.toBeOnTheScreen();
+  expect(await screen.findByText('Source')).toBeOnTheScreen();
 });

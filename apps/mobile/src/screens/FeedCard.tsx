@@ -1,23 +1,25 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import type { Idea } from '@/backend/types';
 import { BookCover } from '@/design/BookCover';
 import { InkPill } from '@/design/InkPill';
+import { PressableSurface } from '@/design/PressableSurface';
 import { RoundIconButton } from '@/design/RoundIconButton';
-import { hardShadow, palette, textStyle, topicTint } from '@/design/theme';
+import { palette, textStyle, topicTint } from '@/design/theme';
 
 /** How many lines of the explanation a card shows. */
 const EXPLANATION_LINES = 7;
 
 /**
- * One full-height card of the Home feed, tinted by its Topic. Tapping it opens the Idea. Like and
- * Add to stack are shown but do nothing yet.
+ * One full-height card of the Home feed, tinted by its Topic. Tapping it presses it flat onto its
+ * 4px shadow, then opens the Idea; its own buttons don't. Like and Add to stack are shown but do
+ * nothing yet.
  */
 export function FeedCard({ idea, height, onOpen, testID }: { idea: Idea; height: number; onOpen: () => void; testID?: string }) {
   return (
     <View testID={testID} style={[styles.slot, { height }]}>
-      <Pressable
-        accessibilityRole="button"
+      <PressableSurface
+        depth={4}
         accessibilityLabel={idea.title}
         onPress={onOpen}
         style={[styles.card, { backgroundColor: topicTint(idea.topic.hue) }]}
@@ -44,7 +46,7 @@ export function FeedCard({ idea, height, onOpen, testID }: { idea: Idea; height:
           <RoundIconButton icon="library_add" iconSize={21} accessibilityLabel="Add to stack" onPress={() => {}} />
           <RoundIconButton icon="favorite" iconSize={21} accessibilityLabel="Like" onPress={() => {}} />
         </View>
-      </Pressable>
+      </PressableSurface>
     </View>
   );
 }
@@ -53,10 +55,7 @@ const styles = StyleSheet.create({
   slot: { paddingTop: 4, paddingRight: 20, paddingBottom: 18, paddingLeft: 16 },
   card: {
     flex: 1,
-    borderWidth: 1.5,
-    borderColor: palette.ink,
     borderRadius: 30,
-    boxShadow: hardShadow(4),
     paddingTop: 22,
     paddingHorizontal: 22,
     paddingBottom: 16,
