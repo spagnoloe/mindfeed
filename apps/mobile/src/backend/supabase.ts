@@ -1,6 +1,6 @@
 import { createClient, type AuthError as SupabaseAuthError, type SupportedStorage, type User } from '@supabase/supabase-js';
 
-import { AuthError, type Backend, type Book, type Idea, type Session, type StackSummary } from './types';
+import { AuthError, type Backend, type Book, type Idea, type SearchResult, type Session, type StackSummary } from './types';
 
 export type SupabaseBackendOptions = {
   url: string;
@@ -61,6 +61,27 @@ const feedRowToIdea = (row: FeedRow): Idea => ({
   topic: { id: row.topic_id, name: row.topic_name, hue: row.topic_hue },
   book: { id: row.book_id, title: row.book_title, author: row.book_author, isbn: row.book_isbn, coverHue: row.book_cover_hue },
 });
+
+/** A row of the `search_content` function. `detail` is a Book's author or an Idea's Book title. */
+type SearchRow = {
+  kind: 'topic' | 'book' | 'idea';
+  id: string;
+  title: string;
+  detail: string | null;
+  hue: number | null;
+  idea_count: number | null;
+};
+
+function toSearchResult({ kind, id, title, detail, hue, idea_count }: SearchRow): SearchResult {
+  switch (kind) {
+    case 'topic':
+      return { kind, id, name: title, hue: hue!, ideaCount: idea_count! };
+    case 'book':
+      return { kind, id, title, author: detail! };
+    case 'idea':
+      return { kind, id, title, bookTitle: detail! };
+  }
+}
 
 /** A row of the `stack_summaries` view. */
 type StackSummaryRow = {
@@ -137,6 +158,28 @@ export function createSupabaseBackend({ url, anonKey, storage }: SupabaseBackend
         if (error) throw dataError(error);
         return data;
       },
+      async getTrendingTopics() {
+        const { data, error } = await client
+          .from('topics')
+          .select('id, name, hue')
+          .not('trending_order', 'is', null)
+          .order('trending_order');
+        if (error) throw dataError(error);
+        return data;
+      },
+      async getTopicSummaries() {
+        const { data, error } = await client.from('topics').select('id, name, hue, ideas(count)').order('name');
+        if (error) throw dataError(error);
+        return (data as unknown as { id: string; name: string; hue: number; ideas: { count: number }[] }[]).map(({ ideas, ...topic }) => ({
+          ...topic,
+          ideaCount: ideas[0]?.count ?? 0,
+        }));
+      },
+      async getBooks() {
+        const { data, error } = await client.from('books').select(BOOK_COLUMNS).order('title');
+        if (error) throw dataError(error);
+        return (data as BookRow[]).map(toBook);
+      },
       async getFeedPage({ seed, offset, limit }) {
         const { data, error } = await client.rpc('feed_page', { seed, start_at: offset, page_size: limit });
         if (error) throw dataError(error);
@@ -162,6 +205,11 @@ export function createSupabaseBackend({ url, anonKey, storage }: SupabaseBackend
         const { data, error } = await client.from('ideas').select(IDEA_COLUMNS).eq('book_id', bookId).order('title');
         if (error) throw dataError(error);
         return (data as unknown as IdeaRow[]).map(toIdea);
+      },
+      async search(query) {
+        const { data, error } = await client.rpc('search_content', { query });
+        if (error) throw dataError(error);
+        return (data as SearchRow[]).map(toSearchResult);
       },
     },
     userData: {

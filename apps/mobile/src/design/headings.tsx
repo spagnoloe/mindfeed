@@ -14,7 +14,8 @@ export function ScreenTitle({ children }: { children: string }) {
 /** A heading inside a screen ("Trending topics", "Books", "Change password"). */
 export function SectionHeading({ children, style }: { children: string; style?: TextProps['style'] }) {
   return (
-    <Text accessibilityRole="header" style={[textStyle(18, 700, { letterSpacing: -0.02 }), { color: palette.ink }, style]}>
+    // lineHeight 22: the design's `line-height: normal` for 18px, as the browser renders it.
+    <Text accessibilityRole="header" style={[textStyle(18, 700, { letterSpacing: -0.02 }), { lineHeight: 22, color: palette.ink }, style]}>
       {children}
     </Text>
   );
