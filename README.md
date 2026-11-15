@@ -1,6 +1,31 @@
-# Mindfeed
+<p align="center">
+  <img src="apps/mobile/assets/images/icon.png" width="96" alt="The Mindfeed app icon: &quot;mf&quot; in black on cream" />
+</p>
 
-Interesting ideas from great books, one at a time. An Expo (React Native) app on Supabase.
+<h1 align="center">Mindfeed</h1>
+
+<p align="center">Interesting ideas from great books, one at a time.</p>
+
+<p align="center">
+  <img src="docs/screenshots/sign-up.png" width="250" alt="Sign up: the mindfeed wordmark above name, email and password fields" />
+  &nbsp;
+  <img src="docs/screenshots/home.png" width="250" alt="Home: a peach card with the History idea &quot;Shared stories let strangers cooperate&quot; from Sapiens" />
+  &nbsp;
+  <img src="docs/screenshots/explore.png" width="250" alt="Explore: search, trending topic chips, a row of book covers and the list of all topics" />
+</p>
+<p align="center">
+  <img src="docs/screenshots/add-to-stack.png" width="250" alt="Add to stack: a sheet over the idea card, with a new Stack called &quot;How people work&quot; ticked" />
+  &nbsp;
+  <img src="docs/screenshots/library.png" width="250" alt="Library: three liked ideas, each with a red heart" />
+  &nbsp;
+  <img src="docs/screenshots/topics.png" width="250" alt="Topics of interest: topic chips, with History, Philosophy and Psychology picked" />
+</p>
+
+- **Home** shows one idea at a time from the Topics you picked, each with the book it comes from.
+- **Like** an idea to keep it in your Library, or gather ideas into **Stacks** of your own.
+- **Explore** by Topic or by Book, or search across everything.
+
+An Expo (React Native) app on Supabase.
 
 ## Repository layout
 
