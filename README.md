@@ -173,7 +173,9 @@ Friends install an APK from a link. JavaScript-only fixes then reach their phone
 eas build --platform android --profile production
 ```
 
-The build takes about 15 minutes. When it finishes, EAS prints a link to the build page; share that link. Friends open it on their phone, download the APK and allow installs from their browser when Android asks.
+The build takes about 15 minutes. The first build also asks to generate an Android keystore: answer yes and EAS keeps it. Every later APK is signed with it, and Android only installs an APK over an existing one when the keystores match.
+
+When the build finishes, share the `.apk` link printed after "Android app:", not the "See logs" build page, which needs an expo.dev login. Friends open it on their phone, download the APK and allow installs from their browser when Android asks.
 
 ### A JavaScript-only fix
 
