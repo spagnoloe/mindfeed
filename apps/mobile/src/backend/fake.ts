@@ -3,6 +3,7 @@ import { content } from '@mindfeed/content';
 import {
   AuthError,
   MAX_FEED_PAGE,
+  MIN_PASSWORD_LENGTH,
   MIN_INTERESTS,
   type Backend,
   type Book,
@@ -118,6 +119,12 @@ export function createFakeBackend(): Backend {
       async logOut() {
         setSession(null);
       },
+      async changePassword({ currentPassword, newPassword }) {
+        const account = signedInAccount();
+        if (account.password !== currentPassword) throw new AuthError('wrong-password');
+        if (newPassword.length < MIN_PASSWORD_LENGTH) throw new AuthError('unknown', 'Password too short');
+        account.password = newPassword;
+      },
       onSessionChange(listener) {
         listeners.add(listener);
         return () => listeners.delete(listener);
@@ -176,6 +183,12 @@ export function createFakeBackend(): Backend {
     userData: {
       async getProfile() {
         return { ...signedInAccount().profile };
+      },
+      async updateProfile({ name, bio }) {
+        const account = signedInAccount();
+        if (!name.trim()) throw new Error('A profile needs a name');
+        account.profile = { name: name.trim(), bio: bio.trim() };
+        return { ...account.profile };
       },
       async getInterests() {
         return [...signedInAccount().interests];

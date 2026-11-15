@@ -3,7 +3,8 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } fr
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useBackend } from '@/backend/BackendProvider';
-import { AuthError } from '@/backend/types';
+import { useLoggedOutEmail } from '@/backend/session';
+import { AuthError, MIN_PASSWORD_LENGTH } from '@/backend/types';
 import { PillButton } from '@/design/PillButton';
 import { SegmentedControl } from '@/design/SegmentedControl';
 import { TextField } from '@/design/TextField';
@@ -16,7 +17,6 @@ const MODES = [
   { value: 'login', label: 'Log in' },
 ] as const;
 
-const MIN_PASSWORD_LENGTH = 6;
 const LOG_IN_FAILED = 'Incorrect email or password.';
 
 /** The prototype's checks, in its order. Returns the error to show, or null when the form can be sent. */
@@ -38,13 +38,17 @@ function failureMessage(mode: Mode, error: unknown): string {
   return 'Something went wrong. Please try again.';
 }
 
-/** Sign up / Log in. A successful one changes the session, and the root layout moves on. */
+/**
+ * Sign up / Log in. A successful one changes the session, and the root layout moves on. Right
+ * after a log-out, it opens on Log in with that user's email filled in.
+ */
 export default function SignInScreen() {
   const { auth } = useBackend();
   const insets = useSafeAreaInsets();
-  const [mode, setMode] = useState<Mode>('signup');
+  const loggedOutEmail = useLoggedOutEmail();
+  const [mode, setMode] = useState<Mode>(loggedOutEmail ? 'login' : 'signup');
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(loggedOutEmail ?? '');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const submitting = useRef(false);

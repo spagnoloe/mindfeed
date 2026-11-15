@@ -13,9 +13,13 @@ export type Session = {
 
 export type SignUpDetails = { name: string; email: string; password: string };
 export type LogInDetails = { email: string; password: string };
+export type PasswordChange = { currentPassword: string; newPassword: string };
+
+/** The shortest password an account can have. */
+export const MIN_PASSWORD_LENGTH = 6;
 
 /** Why an account action failed, in the app's terms rather than Supabase's. */
-export type AuthErrorCode = 'invalid-credentials' | 'email-taken' | 'unknown';
+export type AuthErrorCode = 'invalid-credentials' | 'email-taken' | 'wrong-password' | 'unknown';
 
 export class AuthError extends Error {
   constructor(
@@ -35,6 +39,12 @@ export interface AuthService {
   /** Rejects with `invalid-credentials` for an unknown email or a wrong password alike. */
   logIn(details: LogInDetails): Promise<Session>;
   logOut(): Promise<void>;
+  /**
+   * Changes the signed-in user's password, after re-checking the current one by signing in with it.
+   * Rejects, changing nothing, with `wrong-password` for a wrong current password, and when the new
+   * one is shorter than {@link MIN_PASSWORD_LENGTH}. The user stays signed in either way.
+   */
+  changePassword(change: PasswordChange): Promise<void>;
   /** Calls `listener` whenever the session changes (sign-up, log-in, log-out). Returns an unsubscribe function. */
   onSessionChange(listener: (session: Session | null) => void): () => void;
 }
@@ -125,6 +135,8 @@ export const MIN_INTERESTS = 3;
 /** The signed-in user's profile, Interests, Likes and Stacks. Every method rejects when nobody is signed in. */
 export interface UserDataRepository {
   getProfile(): Promise<Profile>;
+  /** Replaces the name and bio, both trimmed, and returns the profile. Rejects, changing nothing, when the name is blank. */
+  updateProfile(profile: Profile): Promise<Profile>;
   /** The Topic ids of the user's Interests, in no particular order. */
   getInterests(): Promise<string[]>;
   /** Replaces all the user's Interests. Rejects, changing nothing, with fewer than {@link MIN_INTERESTS}. */

@@ -38,3 +38,28 @@ export function useSetInterests() {
     onSuccess: (_result, topicIds) => queryClient.setQueryData(interestsKey(session?.userId), topicIds),
   });
 }
+
+const loggedOutEmailKey = ['loggedOutEmail'] as const;
+
+/**
+ * Logs out. The email is kept first, since the root layout moves to Log in as soon as the
+ * session ends, and Log in fills it in (see {@link useLoggedOutEmail}).
+ */
+export function useLogOut() {
+  const { auth } = useBackend();
+  const queryClient = useQueryClient();
+  const { data: session } = useSession();
+
+  return useMutation({
+    mutationFn: async () => {
+      queryClient.setQueryData(loggedOutEmailKey, session?.email);
+      await auth.logOut();
+    },
+    onError: () => queryClient.removeQueries({ queryKey: loggedOutEmailKey }),
+  });
+}
+
+/** The email of the user who last logged out in this run of the app, if any. */
+export function useLoggedOutEmail(): string | undefined {
+  return useQueryClient().getQueryData<string>(loggedOutEmailKey);
+}

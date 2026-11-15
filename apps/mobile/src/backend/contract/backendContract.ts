@@ -81,6 +81,67 @@ export function describeBackendContract(name: string, makeBackend: () => Backend
       expect(heard.filter((email, i) => email !== heard[i - 1]).slice(-3)).toEqual([account.email, null, account.email]);
     });
 
+    describe('Profile', () => {
+      test('updating it replaces the name and bio, trimmed', async () => {
+        await backend.auth.signUp(newAccount());
+
+        await expect(backend.userData.updateProfile({ name: '  Maya Lin-Reyes ', bio: ' Reads about money. ' })).resolves.toEqual({
+          name: 'Maya Lin-Reyes',
+          bio: 'Reads about money.',
+        });
+        await expect(backend.userData.getProfile()).resolves.toEqual({ name: 'Maya Lin-Reyes', bio: 'Reads about money.' });
+      });
+
+      test('a blank name is rejected and changes nothing', async () => {
+        await backend.auth.signUp(newAccount());
+
+        await expect(backend.userData.updateProfile({ name: '   ', bio: 'Reads about money.' })).rejects.toThrow();
+
+        await expect(backend.userData.getProfile()).resolves.toEqual({ name: 'Maya Lin', bio: '' });
+      });
+    });
+
+    describe('Changing the password', () => {
+      test('with the right current password, the new one logs in and the old one no longer does', async () => {
+        const account = newAccount();
+        const session = await backend.auth.signUp(account);
+
+        await backend.auth.changePassword({ currentPassword: account.password, newPassword: 'readmore2' });
+
+        await expect(backend.auth.getSession()).resolves.toEqual(session);
+        await backend.auth.logOut();
+        await expect(backend.auth.logIn(account)).rejects.toMatchObject({ code: 'invalid-credentials' });
+        await expect(backend.auth.logIn({ ...account, password: 'readmore2' })).resolves.toEqual(session);
+      });
+
+      test('a wrong current password is rejected with wrong-password, changing nothing and keeping the user signed in', async () => {
+        const account = newAccount();
+        const session = await backend.auth.signUp(account);
+
+        await expect(backend.auth.changePassword({ currentPassword: 'not-my-password', newPassword: 'readmore2' })).rejects.toMatchObject({
+          code: 'wrong-password',
+        });
+
+        await expect(backend.auth.getSession()).resolves.toEqual(session);
+        await backend.auth.logOut();
+        await expect(backend.auth.logIn(account)).resolves.toEqual(session);
+      });
+
+      test('a new password shorter than 6 characters is rejected, changing nothing', async () => {
+        const account = newAccount();
+        await backend.auth.signUp(account);
+
+        await expect(backend.auth.changePassword({ currentPassword: account.password, newPassword: 'short' })).rejects.toThrow();
+
+        await backend.auth.logOut();
+        await expect(backend.auth.logIn(account)).resolves.toMatchObject({ email: account.email });
+      });
+
+      test('is out of reach when nobody is signed in', async () => {
+        await expect(backend.auth.changePassword({ currentPassword: 'readmore', newPassword: 'readmore2' })).rejects.toThrow();
+      });
+    });
+
     describe('Interests', () => {
       const [history, psychology, philosophy, economics, investing] = content.topics.map((topic) => topic.id);
       const sorted = (ids: string[]) => [...ids].sort();
@@ -132,6 +193,7 @@ export function describeBackendContract(name: string, makeBackend: () => Backend
       const ideaId = content.ideas[0].id;
       await expect(backend.userData.getProfile()).rejects.toThrow();
       await expect(backend.userData.getInterests()).rejects.toThrow();
+      await expect(backend.userData.updateProfile({ name: 'Maya', bio: '' })).rejects.toThrow();
       await expect(backend.userData.setInterests(content.topics.slice(0, 3).map((topic) => topic.id))).rejects.toThrow();
       await expect(backend.userData.getLikedIdeas()).rejects.toThrow();
       await expect(backend.userData.like(ideaId)).rejects.toThrow();

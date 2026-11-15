@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { useCreateStack, useUpdateStack } from '@/backend/stacks';
 import type { Idea, StackSummary } from '@/backend/types';
+import { FormHeader, FullScreenModal } from '@/design/FullScreenModal';
 import { Icon } from '@/design/Icon';
 import { PillButton } from '@/design/PillButton';
 import { TextField } from '@/design/TextField';
@@ -16,11 +16,9 @@ import { colors, palette, textStyle } from '@/design/theme';
  * - Edit stack, from a Stack screen: prefilled with `stack`'s name and description; "Save" saves them.
  *
  * Its CTA closes the form once saved; it stays greyed out until a name is typed, and without one
- * it says so instead. Cancel and Android back close the form, saving nothing. Like the prototype,
- * it appears without an animation.
+ * it says so instead. Cancel and Android back close the form, saving nothing.
  */
 export function StackForm({ idea, stack, onClose }: { idea?: Idea; stack?: StackSummary; onClose: () => void }) {
-  const insets = useSafeAreaInsets();
   const createStack = useCreateStack();
   const updateStack = useUpdateStack();
   const [name, setName] = useState(stack?.name ?? '');
@@ -38,56 +36,43 @@ export function StackForm({ idea, stack, onClose }: { idea?: Idea; stack?: Stack
   }
 
   return (
-    <Modal
-      testID="stack-form"
-      visible
-      transparent
-      animationType="none"
-      statusBarTranslucent
-      navigationBarTranslucent
-      onRequestClose={onClose}
-    >
-      <View style={[styles.screen, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-        <View style={styles.header}>
-          <PillButton label="Cancel" size="small" onPress={onClose} />
-          <Text style={styles.title}>{stack ? 'Edit stack' : 'New stack'}</Text>
-          <PillButton label={cta} size="small" weight={700} dimmed={!name.trim()} onPress={save} />
-        </View>
-        <ScrollView style={styles.scroll} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-          <TextField
-            label="Name"
-            placeholder="e.g. Ideas for work"
-            value={name}
-            onChangeText={(text) => {
-              setName(text);
-              setError('');
-            }}
-          />
-          <TextField label="Description (optional)" rows={4} placeholder="What is this stack for?" value={description} onChangeText={setDescription} />
-          {error !== '' && (
-            <Text accessibilityRole="alert" style={styles.error}>
-              {error}
-            </Text>
-          )}
-          {idea && (
-            <View style={styles.idea}>
-              <Icon name="lightbulb" size={22} />
-              <View style={styles.ideaText}>
-                <Text style={styles.ideaEyebrow}>Will be added</Text>
-                <Text style={styles.ideaTitle}>{idea.title}</Text>
-              </View>
+    <FullScreenModal testID="stack-form" onClose={onClose}>
+      <FormHeader
+        title={stack ? 'Edit stack' : 'New stack'}
+        onCancel={onClose}
+        action={<PillButton label={cta} size="small" weight={700} dimmed={!name.trim()} onPress={save} />}
+      />
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+        <TextField
+          label="Name"
+          placeholder="e.g. Ideas for work"
+          value={name}
+          onChangeText={(text) => {
+            setName(text);
+            setError('');
+          }}
+        />
+        <TextField label="Description (optional)" rows={4} placeholder="What is this stack for?" value={description} onChangeText={setDescription} />
+        {error !== '' && (
+          <Text accessibilityRole="alert" style={styles.error}>
+            {error}
+          </Text>
+        )}
+        {idea && (
+          <View style={styles.idea}>
+            <Icon name="lightbulb" size={22} />
+            <View style={styles.ideaText}>
+              <Text style={styles.ideaEyebrow}>Will be added</Text>
+              <Text style={styles.ideaTitle}>{idea.title}</Text>
             </View>
-          )}
-        </ScrollView>
-      </View>
-    </Modal>
+          </View>
+        )}
+      </ScrollView>
+    </FullScreenModal>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: palette.paper },
-  header: { height: 60, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16 },
-  title: { ...textStyle(17, 700), lineHeight: 21, color: palette.ink },
   scroll: { flex: 1 },
   content: { paddingTop: 16, paddingHorizontal: 20, paddingBottom: 32, gap: 16 },
   error: { ...textStyle(14, 600), lineHeight: 17, color: colors.danger },
