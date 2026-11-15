@@ -5,15 +5,16 @@ description: Run the Mindfeed app on the Android emulator, drive it, and screens
 
 ## The app
 
-`scripts/android.sh start` boots the emulator if needed, starts this worktree's Metro, and returns once the app has loaded. Run `scripts/android.sh` alone for the other commands: `reload`, `shot`, `tap`, `text`, `back`, `log`, `stop`.
+`scripts/android.sh start` boots the emulator if needed, starts this worktree's Metro, and returns once the app has loaded. Run `scripts/android.sh` alone for the other commands: `reload`, `shot`, `tap`, `text`, `enter`, `back`, `log`, `stop`.
 
 - Metro watches files, so edits hot-reload. Use `reload` for a fresh mount (state cleared), never a new `start`.
 - `shot` saves an image at 1px per dp, the design's scale. `tap` takes coordinates measured on a shot.
 - The emulator's screen is wider and its status bar taller than the design's 390×844 frame, so compare sizes and gaps rather than absolute positions. The gear button at the top right is Expo Go's, not the app's.
+- While a field is focused, the on-screen keyboard covers the bottom of the screen, and a `tap` there types a key. After typing, `enter` closes the keyboard; then `shot` and tap the button.
 - After an action that animates (a press has a 150ms delay), wait about a second before `shot`.
 - `stop` when the check is done.
 
-The app talks to local Supabase. To reach the screens behind sign-in without onboarding, log in as `maya@example.com` / `readmore` (Interests already picked). `supabase db reset` deletes that account; `node scripts/dev-account.mjs` brings it back.
+The app talks to local Supabase. To reach the screens behind sign-in without onboarding, log in as `maya@example.com` / `readmore` (Interests already picked). `supabase db reset` deletes that account; `node scripts/dev-account.mjs` brings it back (it prints "Checked" when the account was already there). The app shows "Incorrect email or password." only when Auth rejects the credentials; for the exact request and its status, read `docker logs supabase_auth_mindfeed`.
 
 ## The design
 
