@@ -1,17 +1,23 @@
 import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { useRouter } from 'expo-router';
+
 import { useLikedIdeas, useToggleLike } from '@/backend/likes';
+import { useStacks } from '@/backend/stacks';
 import type { Idea } from '@/backend/types';
 import { ConfirmDialog } from '@/design/ConfirmDialog';
 import { ScreenTitle } from '@/design/headings';
 import { Icon } from '@/design/Icon';
 import { IdeaRow } from '@/design/IdeaRow';
+import { PillButton } from '@/design/PillButton';
 import { ScreenStatus } from '@/design/ScreenStatus';
 import { SegmentedControl } from '@/design/SegmentedControl';
 import { colors, palette, textStyle } from '@/design/theme';
 import { tabScreenContent } from '@/navigation/tabScreenContent';
 import { useOpenInTab } from '@/navigation/useOpenInTab';
+import { StackCard } from '@/screens/StackCard';
+import { StackForm } from '@/screens/StackForm';
 
 type LibrarySide = 'liked' | 'stacks';
 
@@ -20,7 +26,7 @@ const SIDES = [
   { value: 'stacks', label: 'Stacks' },
 ] as const;
 
-/** Library: the user's Liked Ideas and, from the Stacks ticket, their Stacks. */
+/** Library: the user's Liked Ideas and their Stacks. */
 export default function LibraryScreen() {
   const [side, setSide] = useState<LibrarySide>('liked');
 
@@ -28,12 +34,7 @@ export default function LibraryScreen() {
     <ScrollView contentContainerStyle={[tabScreenContent, styles.content]} showsVerticalScrollIndicator={false}>
       <ScreenTitle>library.</ScreenTitle>
       <SegmentedControl options={SIDES} value={side} onChange={setSide} />
-      {side === 'liked' ? (
-        <LikedIdeas />
-      ) : (
-        // A placeholder until Stacks arrive: the prototype's empty-Stacks line, without its New stack button.
-        <Text style={styles.stacksPlaceholder}>Create a stack, then add ideas to it from any idea.</Text>
-      )}
+      {side === 'liked' ? <LikedIdeas /> : <Stacks />}
     </ScrollView>
   );
 }
@@ -85,6 +86,37 @@ function LikedIdeas() {
   );
 }
 
+/** A New stack button over the user's Stacks, newest first. A Stack's card opens it. */
+function Stacks() {
+  const stacks = useStacks();
+  const router = useRouter();
+  const [creating, setCreating] = useState(false);
+
+  return (
+    <View style={styles.stacks}>
+      <PillButton label="New stack" icon="add" size="wide" weight={700} onPress={() => setCreating(true)} />
+      {stacks.isPending ? (
+        <ScreenStatus />
+      ) : stacks.isError ? (
+        <ScreenStatus error onRetry={() => void stacks.refetch()} />
+      ) : stacks.data.length === 0 ? (
+        <Text style={styles.stacksEmpty}>Create a stack, then add ideas to it from any idea.</Text>
+      ) : (
+        <View style={styles.stackCards}>
+          {stacks.data.map((stack) => (
+            <StackCard
+              key={stack.id}
+              stack={stack}
+              onPress={() => router.push({ pathname: '/library/stack/[id]', params: { id: stack.id } })}
+            />
+          ))}
+        </View>
+      )}
+      {creating && <StackForm onClose={() => setCreating(false)} />}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   content: { gap: 20 },
   rows: { gap: 10 },
@@ -100,7 +132,10 @@ const styles = StyleSheet.create({
   },
   emptyTitle: { ...textStyle(17, 700), lineHeight: 21, color: palette.ink, textAlign: 'center' },
   emptyBody: { ...textStyle(16, 400, { lineHeight: 1.45 }), color: palette.mut, textAlign: 'center', maxWidth: 240 },
-  stacksPlaceholder: {
+  stacks: { gap: 18 },
+  // Room on the right for the cards stacked behind.
+  stackCards: { gap: 22, paddingRight: 10 },
+  stacksEmpty: {
     ...textStyle(16, 400, { lineHeight: 1.45 }),
     color: palette.mut,
     textAlign: 'center',

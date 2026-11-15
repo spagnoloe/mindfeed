@@ -142,6 +142,9 @@ export function describeBackendContract(name: string, makeBackend: () => Backend
       await expect(backend.userData.addToStack(crypto.randomUUID(), ideaId)).rejects.toThrow();
       await expect(backend.userData.removeFromStack(crypto.randomUUID(), ideaId)).rejects.toThrow();
       await expect(backend.userData.getStacksWith(ideaId)).rejects.toThrow();
+      await expect(backend.userData.getStack(crypto.randomUUID())).rejects.toThrow();
+      await expect(backend.userData.updateStack(crypto.randomUUID(), { name: 'Work', description: '' })).rejects.toThrow();
+      await expect(backend.userData.deleteStack(crypto.randomUUID())).rejects.toThrow();
     });
 
     describe('Likes', () => {
@@ -286,6 +289,54 @@ export function describeBackendContract(name: string, makeBackend: () => Backend
         await backend.userData.removeFromStack(stack.id, third.id);
         expect((await backend.userData.getStacks())[0]).toMatchObject({ ideaCount: 1 });
       });
+
+      test('a Stack comes with its Ideas in the order they were added', async () => {
+        const stack = await backend.userData.createStack({ name: 'Work', description: 'For work', ideaId: second.id });
+        await backend.userData.addToStack(stack.id, third.id);
+        await backend.userData.addToStack(stack.id, first.id);
+
+        const got = await backend.userData.getStack(stack.id);
+
+        expect(got).toMatchObject({ id: stack.id, name: 'Work', description: 'For work', ideaCount: 3, firstTopic: topicOf(second) });
+        expect(got.ideas.map((idea) => idea.id)).toEqual([second.id, third.id, first.id]);
+        expect(got.ideas[0]).toEqual(await backend.content.getIdea(second.id));
+      });
+
+      test('getting a Stack that does not exist rejects', async () => {
+        await expect(backend.userData.getStack(crypto.randomUUID())).rejects.toThrow();
+      });
+
+      test('updating a Stack trims and saves its name and description, keeping its Ideas', async () => {
+        const stack = await backend.userData.createStack({ name: 'Work', description: 'For work', ideaId: first.id });
+
+        const updated = await backend.userData.updateStack(stack.id, { name: ' Deep work ', description: '  ' });
+
+        expect(updated).toEqual({ ...stack, name: 'Deep work', description: '' });
+        await expect(backend.userData.getStacks()).resolves.toEqual([updated]);
+        expect((await backend.userData.getStack(stack.id)).ideas.map((idea) => idea.id)).toEqual([first.id]);
+      });
+
+      test('updating a Stack with a blank name is rejected and changes nothing', async () => {
+        const stack = await backend.userData.createStack({ name: 'Work', description: 'For work' });
+
+        await expect(backend.userData.updateStack(stack.id, { name: '  ', description: 'Other' })).rejects.toThrow();
+
+        await expect(backend.userData.getStacks()).resolves.toEqual([stack]);
+      });
+
+      test('deleting a Stack removes it and its entries, but not its Ideas or their Likes', async () => {
+        const doomed = await backend.userData.createStack({ name: 'Work', ideaId: first.id });
+        const kept = await backend.userData.createStack({ name: 'Reading', ideaId: first.id });
+        await backend.userData.like(first.id);
+
+        await backend.userData.deleteStack(doomed.id);
+
+        await expect(backend.userData.getStacks()).resolves.toEqual([kept]);
+        await expect(backend.userData.getStack(doomed.id)).rejects.toThrow();
+        await expect(backend.userData.getStacksWith(first.id)).resolves.toEqual([kept.id]);
+        await expect(backend.content.getIdea(first.id)).resolves.toMatchObject({ id: first.id });
+        await expect(backend.userData.isLiked(first.id)).resolves.toBe(true);
+      });
     });
 
     test("each user sees and changes only their own Stacks", async () => {
@@ -300,6 +351,9 @@ export function describeBackendContract(name: string, makeBackend: () => Backend
       await expect(backend.userData.getStacksWith(first)).resolves.toEqual([]);
       await expect(backend.userData.addToStack(mayas.id, second)).rejects.toThrow();
       await backend.userData.removeFromStack(mayas.id, first);
+      await expect(backend.userData.getStack(mayas.id)).rejects.toThrow();
+      await expect(backend.userData.updateStack(mayas.id, { name: 'Hacked', description: '' })).rejects.toThrow();
+      await expect(backend.userData.deleteStack(mayas.id)).rejects.toThrow();
       await backend.auth.logOut();
 
       await backend.auth.logIn(maya);

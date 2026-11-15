@@ -2,39 +2,44 @@ import { useState } from 'react';
 import { Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useCreateStack } from '@/backend/stacks';
-import type { Idea } from '@/backend/types';
+import { useCreateStack, useUpdateStack } from '@/backend/stacks';
+import type { Idea, StackSummary } from '@/backend/types';
 import { Icon } from '@/design/Icon';
 import { PillButton } from '@/design/PillButton';
 import { TextField } from '@/design/TextField';
 import { colors, palette, textStyle } from '@/design/theme';
 
 /**
- * The New stack form, opened from the Add to stack sheet and covering the whole screen, tab bar
- * included. "Create & add" creates the Stack with `idea` in it and closes the form; it stays
- * greyed out until a name is typed, and without one it says so instead. Cancel and Android back
- * close the form, creating nothing. Like the prototype, it appears without an animation.
+ * The stack form, covering the whole screen, tab bar included. It is one of:
+ * - New stack with an Idea, from the Add to stack sheet: "Create & add" creates the Stack holding `idea`.
+ * - New stack, from the Library: "Create" creates an empty Stack.
+ * - Edit stack, from a Stack screen: prefilled with `stack`'s name and description; "Save" saves them.
+ *
+ * Its CTA closes the form once saved; it stays greyed out until a name is typed, and without one
+ * it says so instead. Cancel and Android back close the form, saving nothing. Like the prototype,
+ * it appears without an animation.
  */
-export function NewStackForm({ idea, onClose }: { idea: Idea; onClose: () => void }) {
+export function StackForm({ idea, stack, onClose }: { idea?: Idea; stack?: StackSummary; onClose: () => void }) {
   const insets = useSafeAreaInsets();
   const createStack = useCreateStack();
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
+  const updateStack = useUpdateStack();
+  const [name, setName] = useState(stack?.name ?? '');
+  const [description, setDescription] = useState(stack?.description ?? '');
   const [error, setError] = useState('');
+  const cta = stack ? 'Save' : idea ? 'Create & add' : 'Create';
 
-  function create() {
-    if (createStack.isPending) return;
+  function save() {
+    if (createStack.isPending || updateStack.isPending) return;
     if (!name.trim()) return setError('Give your stack a name.');
-    createStack.mutate(
-      { name, description, ideaId: idea.id },
-      // The prototype has no copy for a Stack that fails to save.
-      { onSuccess: onClose, onError: () => setError('Something went wrong. Please try again.') },
-    );
+    // The prototype has no copy for a Stack that fails to save.
+    const callbacks = { onSuccess: onClose, onError: () => setError('Something went wrong. Please try again.') };
+    if (stack) updateStack.mutate({ stackId: stack.id, details: { name, description } }, callbacks);
+    else createStack.mutate({ name, description, ideaId: idea?.id }, callbacks);
   }
 
   return (
     <Modal
-      testID="new-stack-form"
+      testID="stack-form"
       visible
       transparent
       animationType="none"
@@ -45,8 +50,8 @@ export function NewStackForm({ idea, onClose }: { idea: Idea; onClose: () => voi
       <View style={[styles.screen, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
         <View style={styles.header}>
           <PillButton label="Cancel" size="small" onPress={onClose} />
-          <Text style={styles.title}>New stack</Text>
-          <PillButton label="Create & add" size="small" weight={700} dimmed={!name.trim()} onPress={create} />
+          <Text style={styles.title}>{stack ? 'Edit stack' : 'New stack'}</Text>
+          <PillButton label={cta} size="small" weight={700} dimmed={!name.trim()} onPress={save} />
         </View>
         <ScrollView style={styles.scroll} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <TextField
@@ -64,13 +69,15 @@ export function NewStackForm({ idea, onClose }: { idea: Idea; onClose: () => voi
               {error}
             </Text>
           )}
-          <View style={styles.idea}>
-            <Icon name="lightbulb" size={22} />
-            <View style={styles.ideaText}>
-              <Text style={styles.ideaEyebrow}>Will be added</Text>
-              <Text style={styles.ideaTitle}>{idea.title}</Text>
+          {idea && (
+            <View style={styles.idea}>
+              <Icon name="lightbulb" size={22} />
+              <View style={styles.ideaText}>
+                <Text style={styles.ideaEyebrow}>Will be added</Text>
+                <Text style={styles.ideaTitle}>{idea.title}</Text>
+              </View>
             </View>
-          </View>
+          )}
         </ScrollView>
       </View>
     </Modal>
