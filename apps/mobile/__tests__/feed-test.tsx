@@ -34,10 +34,10 @@ async function openHome() {
 }
 
 /**
- * Swipes the feed to the card at `position` and returns that card's title. The list renders only
- * the cards near where it has scrolled to, and only once it knows its content's size.
+ * Swipes the feed to the card at `position` and waits for it. The list renders only the cards
+ * near where it has scrolled to, and only once it knows its content's size.
  */
-async function swipeTo(feed: ReturnType<typeof screen.getByTestId>, position: number): Promise<string> {
+async function swipeTo(feed: ReturnType<typeof screen.getByTestId>, position: number) {
   const contentSize = { width: 390, height: (position + 10) * FEED_HEIGHT };
   const nativeEvent = { contentOffset: { x: 0, y: position * FEED_HEIGHT }, contentSize, layoutMeasurement: { width: 390, height: FEED_HEIGHT } };
   await act(async () => {
@@ -46,17 +46,24 @@ async function swipeTo(feed: ReturnType<typeof screen.getByTestId>, position: nu
     fireEvent(feed, 'momentumScrollEnd', { nativeEvent });
     await jest.advanceTimersByTimeAsync(200);
   });
-  const card = await screen.findByTestId(`feed-card-${position}`);
-  return within(card).getByRole('header').props.children as string;
+  await screen.findByTestId(`feed-card-${position}`);
 }
+
+/** The title of the card at `position`, which must be rendered. */
+const cardTitle = (position: number) => within(screen.getByTestId(`feed-card-${position}`)).getByRole('header').props.children as string;
 
 test('the feed shows the Ideas in the Interests first, then the others, and keeps going past the last Idea', async () => {
   const { feed } = await openHome();
   const total = content.ideas.length;
   const inInterests = content.ideas.filter((idea) => interests.includes(idea.topicId)).length;
 
+  // Reads every card up to one past the last Idea, swiping on only when the next card isn't
+  // rendered yet: a swipe per card makes this test too slow for CI.
   const titles: string[] = [];
-  for (let position = 0; position <= total; position++) titles.push(await swipeTo(feed, position));
+  for (let position = 0; position <= total; position++) {
+    if (!screen.queryByTestId(`feed-card-${position}`)) await swipeTo(feed, position);
+    titles.push(cardTitle(position));
+  }
 
   const topics = titles.map((title) => ideaByTitle(title).topicId);
   expect(topics.slice(0, inInterests).every((id) => interests.includes(id))).toBe(true);
