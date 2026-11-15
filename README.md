@@ -189,9 +189,12 @@ eas update --channel production --environment production --message "<what change
 
 ### A native change
 
-Anything that changes the native app needs a new APK: adding or upgrading a package with native code, an Expo SDK upgrade, or a change to `app.json` such as the icon, splash screen or plugins. Bump `version` in `app.json` (for example `1.0.0` → `1.1.0`), then build and share the new link as in **First release**.
+Anything that changes the native app needs a new APK; `eas update` can't deliver it. Build and share the new link as in **First release**. Friends install it over the old one, and their accounts, Likes and Stacks stay, because they live in Supabase.
 
-The bump is what keeps updates safe. Each build only accepts updates published for its own `version` (the `appVersion` runtime version policy), so an update that expects new native code never reaches an old APK. Forget the bump and the update reaches old APKs too, which may then crash.
+- **Native code** (adding or upgrading a package with native code, an Expo SDK upgrade, a new config plugin): bump `version` in `app.json` first, for example `1.0.0` → `1.1.0`.
+- **Icon or splash screen only**: keep `version` as it is.
+
+The bump is what keeps updates safe. Each build only accepts updates published for its own `version` (the `appVersion` runtime version policy), so JavaScript that expects new native code never reaches an old APK. Forget the bump after a native code change and the next update reaches old APKs too, which may then crash. An icon change doesn't affect what JavaScript can run, so old and new APKs can keep sharing updates.
 
 ### A content update
 
