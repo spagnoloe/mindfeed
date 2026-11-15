@@ -61,6 +61,7 @@ export default function ExploreScreen() {
             onChangeText={setQuery}
             onFocus={() => setSearching(true)}
             returnKeyType="search"
+            autoCapitalize="none"
             autoCorrect={false}
             style={styles.searchInput}
           />
