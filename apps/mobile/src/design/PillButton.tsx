@@ -2,7 +2,7 @@ import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-na
 
 import { Icon, type IconName } from './Icon';
 import { PressableSurface } from './PressableSurface';
-import { colors, palette, type, type FontWeight } from './theme';
+import { colors, palette, textStyle, type FontWeight } from './theme';
 
 /** Background and label colour of each pill in the prototype. */
 const tones = {
@@ -36,32 +36,34 @@ export type PillButtonProps = {
   /** Overrides the size's label weight, where the prototype differs (e.g. a dialog's confirm is 700). */
   weight?: FontWeight;
   icon?: IconName;
-  /** The prototype's inactive look ("Pick 2 more"): still presses, never acts. */
-  disabled?: boolean;
+  /**
+   * The prototype's greyed-out look ("Pick 2 more", an empty stack form's Create). Only a look:
+   * the pill still presses and calls `onPress`, and the caller decides what that does, as the
+   * prototype does (nothing for "Pick 2 more", a validation error for Create).
+   */
+  dimmed?: boolean;
   /** Layout only, e.g. `flex: 1` in a row. */
   style?: StyleProp<ViewStyle>;
 };
 
 /** A raised pill button. */
-export function PillButton({ label, onPress, tone = 'card', size = 'large', weight, icon, disabled = false, style }: PillButtonProps) {
+export function PillButton({ label, onPress, tone = 'card', size = 'large', weight, icon, dimmed = false, style }: PillButtonProps) {
   const { height, fontSize, weight: sizeWeight } = sizes[size];
-  const { backgroundColor, color } = disabledTone(tones[tone], tone, disabled);
+  const { backgroundColor, color, borderColor } = dimmed ? dimmedLook(tone) : { ...tones[tone], borderColor: palette.ink };
 
   return (
     <PressableSurface
       onPress={onPress}
-      disabled={disabled}
       style={[
         styles.pill,
-        { height, borderRadius: height / 2, backgroundColor },
+        { height, borderRadius: height / 2, backgroundColor, borderColor },
         size === 'small' && styles.small,
-        tone === 'card' && disabled && { borderColor: colors.disabled },
         style,
       ]}
     >
       <View style={styles.content}>
         {icon && <Icon name={icon} size={size === 'small' ? 20 : 22} color={color} />}
-        <Text style={[type(fontSize, weight ?? sizeWeight), { color }]}>{label}</Text>
+        <Text style={[textStyle(fontSize, weight ?? sizeWeight), { color }]}>{label}</Text>
       </View>
     </PressableSurface>
   );
@@ -71,10 +73,9 @@ export function PillButton({ label, onPress, tone = 'card', size = 'large', weig
  * The prototype greys out an inactive filled pill (`#c4bdb0` background, white label) and an
  * inactive card pill's border and label. The ink shadow stays either way.
  */
-function disabledTone(t: { backgroundColor: string; color: string }, tone: keyof typeof tones, disabled: boolean) {
-  if (!disabled) return t;
-  if (tone === 'card') return { backgroundColor: t.backgroundColor, color: colors.disabled };
-  return { backgroundColor: colors.disabled, color: colors.white };
+function dimmedLook(tone: keyof typeof tones) {
+  if (tone === 'card') return { backgroundColor: palette.card, color: colors.disabled, borderColor: colors.disabled };
+  return { backgroundColor: colors.disabled, color: colors.white, borderColor: palette.ink };
 }
 
 const styles = StyleSheet.create({

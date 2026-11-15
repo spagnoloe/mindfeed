@@ -4,11 +4,6 @@ import { Text } from 'react-native';
 
 import { PressableSurface } from './PressableSurface';
 
-jest.mock('expo-haptics', () => ({
-  impactAsync: jest.fn(),
-  selectionAsync: jest.fn(),
-  ImpactFeedbackStyle: { Light: 'light' },
-}));
 
 const raised = { boxShadow: '2px 2px 0px #1f1d1a', transform: [{ translateX: 0 }, { translateY: 0 }] };
 const flat = { boxShadow: '0px 0px 0px #1f1d1a', transform: [{ translateX: 2 }, { translateY: 2 }] };
@@ -90,23 +85,6 @@ test('a press gives a light haptic', async () => {
 
   expect(Haptics.impactAsync).toHaveBeenCalledWith(Haptics.ImpactFeedbackStyle.Light);
   expect(Haptics.selectionAsync).not.toHaveBeenCalled();
-});
-
-test('a disabled surface still presses but never acts', async () => {
-  const onPress = jest.fn();
-  await render(
-    <PressableSurface onPress={onPress} disabled>
-      <Text>Pick 2 more</Text>
-    </PressableSurface>,
-  );
-  const button = screen.getByRole('button', { name: 'Pick 2 more' });
-
-  await setup().press(button);
-  expect(button).toHaveStyle(flat);
-  await act(() => jest.advanceTimersByTime(500));
-
-  expect(onPress).not.toHaveBeenCalled();
-  expect(button).toBeDisabled();
 });
 
 describe('toggle mode', () => {

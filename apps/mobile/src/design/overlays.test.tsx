@@ -8,7 +8,6 @@ import { BottomSheet } from './BottomSheet';
 import { ConfirmDialog } from './ConfirmDialog';
 import { PRESS_DELAY_MS } from './PressableSurface';
 
-jest.mock('expo-haptics', () => ({ impactAsync: jest.fn(), selectionAsync: jest.fn(), ImpactFeedbackStyle: { Light: 'light' } }));
 
 beforeEach(() => jest.useFakeTimers());
 afterEach(() => jest.useRealTimers());

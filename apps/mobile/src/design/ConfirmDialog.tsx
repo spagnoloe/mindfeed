@@ -1,7 +1,7 @@
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { PillButton } from './PillButton';
-import { colors, hardShadow, palette, type } from './theme';
+import { colors, hardShadow, palette, textStyle } from './theme';
 
 /**
  * A centred confirmation dialog with Cancel and a red confirming button. Cancel, a tap outside
@@ -63,8 +63,8 @@ const styles = StyleSheet.create({
     borderRadius: 26,
     boxShadow: hardShadow(4),
   },
-  title: { ...type(20, 700, { lineHeight: 1.15, letterSpacing: -0.02 }), color: palette.ink },
-  body: { ...type(17, 400, { lineHeight: 1.45 }), color: palette.ink2 },
+  title: { ...textStyle(20, 700, { lineHeight: 1.15, letterSpacing: -0.02 }), color: palette.ink },
+  body: { ...textStyle(17, 400, { lineHeight: 1.45 }), color: palette.ink2 },
   actions: { flexDirection: 'row', gap: 10, paddingTop: 10 },
   action: { flex: 1 },
 });

@@ -1,7 +1,7 @@
 import { StyleSheet, Text } from 'react-native';
 
 import { PressableSurface } from './PressableSurface';
-import { colors, palette, topicTint, type } from './theme';
+import { colors, palette, topicTint, textStyle } from './theme';
 
 /**
  * A Topic chip for picking Interests (onboarding, Topics of interest). It stays pressed in and
@@ -21,5 +21,5 @@ export function TopicChip({ name, hue, selected, onToggle }: { name: string; hue
 
 const styles = StyleSheet.create({
   chip: { height: 46, paddingHorizontal: 20, borderRadius: 23, justifyContent: 'center' },
-  label: { ...type(16, 600), color: palette.ink },
+  label: { ...textStyle(16, 600), color: palette.ink },
 });

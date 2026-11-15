@@ -3,7 +3,7 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PillButton } from './PillButton';
-import { colors, palette, type } from './theme';
+import { colors, palette, textStyle } from './theme';
 
 /**
  * A sheet over the current screen, with a title and a Done button. Done, a tap outside and
@@ -68,6 +68,6 @@ const styles = StyleSheet.create({
   handleArea: { alignItems: 'center', paddingTop: 10, paddingBottom: 4 },
   handle: { width: 40, height: 5, borderRadius: 3, backgroundColor: palette.line2 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 6, paddingRight: 16, paddingLeft: 22 },
-  title: { ...type(22, 700, { letterSpacing: -0.03 }), color: palette.ink },
+  title: { ...textStyle(22, 700, { letterSpacing: -0.03 }), color: palette.ink },
   body: { flexGrow: 0 },
 });

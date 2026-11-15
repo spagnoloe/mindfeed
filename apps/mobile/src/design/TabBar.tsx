@@ -2,7 +2,7 @@ import type { BottomTabBarProps } from 'expo-router/tabs';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Icon, type IconName } from './Icon';
-import { colors, hardShadow, palette, type } from './theme';
+import { colors, hardShadow, palette, textStyle } from './theme';
 
 /** Space below the pill when the system leaves none. The prototype's bar is 4px + a 58px pill + 22px. */
 const MIN_BOTTOM_SPACE = 22;
@@ -63,5 +63,5 @@ const styles = StyleSheet.create({
   },
   tab: { flex: 1, borderRadius: 23, alignItems: 'center', justifyContent: 'center', gap: 1 },
   focused: { backgroundColor: palette.acc },
-  label: type(11, 600),
+  label: textStyle(11, 600),
 });

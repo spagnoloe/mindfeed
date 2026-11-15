@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors, palette, type } from './theme';
+import { colors, palette, textStyle } from './theme';
 
 /** Two or more segments on a track ("Sign up / Log in", "Liked ideas / Stacks"). The selected one is ink. */
 export function SegmentedControl<T extends string>({
@@ -36,5 +36,5 @@ const styles = StyleSheet.create({
   track: { flexDirection: 'row', padding: 4, gap: 4, borderRadius: 22, backgroundColor: palette.track },
   segment: { flex: 1, height: 40, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   selected: { backgroundColor: palette.ink },
-  label: type(15, 600),
+  label: textStyle(15, 600),
 });

@@ -19,8 +19,6 @@ export type PressableSurfaceProps = {
   children: ReactNode;
   /** Toggle mode (topic chips): stays pressed in while `true`. The caller tints the background. */
   selected?: boolean;
-  /** Still presses, like the prototype's "Pick N more", but never acts. */
-  disabled?: boolean;
   /** Layout, size, radius and background. The border and the shadow come from here. */
   style?: StyleProp<ViewStyle>;
   accessibilityLabel?: string;
@@ -31,7 +29,7 @@ export type PressableSurfaceProps = {
  * flat onto its shadow, holds that for {@link PRESS_DELAY_MS}, and only then acts, however quick
  * the tap. Taps while a press is showing are ignored.
  */
-export function PressableSurface({ onPress, children, selected, disabled = false, style, accessibilityLabel }: PressableSurfaceProps) {
+export function PressableSurface({ onPress, children, selected, style, accessibilityLabel }: PressableSurfaceProps) {
   const isToggle = selected !== undefined;
   const [touching, setTouching] = useState(false);
   const [acting, setActing] = useState(false);
@@ -44,14 +42,12 @@ export function PressableSurface({ onPress, children, selected, disabled = false
   function handlePress() {
     if (timer.current) return;
     setActing(true);
-    if (!disabled) {
-      if (isToggle) void Haptics.selectionAsync();
-      else void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
+    if (isToggle) void Haptics.selectionAsync();
+    else void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     timer.current = setTimeout(() => {
       timer.current = null;
       setActing(false);
-      if (!disabled) onPress();
+      onPress();
     }, PRESS_DELAY_MS);
   }
 
@@ -62,7 +58,7 @@ export function PressableSurface({ onPress, children, selected, disabled = false
     <AnimatedPressable
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
-      accessibilityState={{ disabled, ...(isToggle && { selected }) }}
+      accessibilityState={isToggle ? { selected } : undefined}
       onPressIn={() => setTouching(true)}
       onPressOut={() => setTouching(false)}
       onPress={handlePress}

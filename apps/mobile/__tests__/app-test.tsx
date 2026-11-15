@@ -9,7 +9,6 @@ import { BackHeader } from '@/design/BackHeader';
 jest.mock('@/backend/instance', () => ({
   backend: jest.requireActual('@/backend/fake').createFakeBackend(),
 }));
-jest.mock('expo-haptics', () => ({ impactAsync: jest.fn(), selectionAsync: jest.fn(), ImpactFeedbackStyle: { Light: 'light' } }));
 
 /** Stands in for a screen deeper in a tab (Idea, Topic, Book, Stack) until those exist. */
 function DeeperScreen() {

@@ -4,7 +4,7 @@ import { Icon, type IconName } from './Icon';
 import { palette } from './theme';
 
 /**
- * A round, bordered icon button (back, feed up/down, Like and Stack on a card, Stack edit/delete).
+ * A round, bordered icon button (back, the Home feed's up/down, Like and Add to stack on a feed Idea, Stack edit/delete).
  * It has no press effect: it flashes `acc` while touched and acts immediately.
  */
 export function RoundIconButton({

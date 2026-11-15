@@ -33,8 +33,6 @@ export const colors = {
   tabInactive: '#7a756c',
   /** Destructive dialog CTA and validation errors. */
   danger: oklch(0.54, 0.17, 28),
-  /** A filled Like heart. */
-  liked: oklch(0.58, 0.18, 25),
   /** Behind the bottom sheet and dialogs. */
   backdrop: 'rgba(31,29,26,0.32)',
 };
@@ -46,18 +44,8 @@ export function topicTint(hue: number, offset = 0): string {
   return oklch(lightness, palette.tintChroma, hue);
 }
 
-/** The fallback cover colour for a Book in a Topic: the prototype's `cover(h)`. */
-export function topicCover(hue: number): string {
-  return oklch(0.52, 0.1, hue);
-}
-
-/** The dot beside a Topic in the "All topics" list. */
-export function topicDot(hue: number): string {
-  return oklch(0.78, 0.11, hue);
-}
-
 /** Bricolage Grotesque, one family per weight (React Native can't pick weights of a custom font). */
-export const fontFamilies = {
+const fontFamilies = {
   400: 'BricolageGrotesque_400Regular',
   500: 'BricolageGrotesque_500Medium',
   600: 'BricolageGrotesque_600SemiBold',
@@ -72,7 +60,7 @@ export type FontWeight = keyof typeof fontFamilies;
  * letter spacing as the multiples of the font size that the CSS uses (`line-height:1.45`,
  * `letter-spacing:-0.04em`).
  */
-export function type(size: number, weight: FontWeight, opts: { lineHeight?: number; letterSpacing?: number } = {}): TextStyle {
+export function textStyle(size: number, weight: FontWeight, opts: { lineHeight?: number; letterSpacing?: number } = {}): TextStyle {
   return {
     fontFamily: fontFamilies[weight],
     fontSize: size,
