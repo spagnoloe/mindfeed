@@ -18,8 +18,8 @@ Usage: scripts/android.sh <command>
   start          Boot the emulator if none is running, start Metro for this worktree,
                  open the app in Expo Go and wait until it has loaded
   reload         Force-stop Expo Go and reopen the app: a fresh mount, no in-memory state
-  shot <file>    Screenshot the emulator, scaled to 390px wide like the design's frames
-  tap <x> <y>    Tap a point measured on a shot (390px-wide coordinates)
+  shot <file>    Screenshot the emulator at 1px per dp, the design's scale
+  tap <x> <y>    Tap a point measured on a shot
   text <string>  Type into the focused field
   back           Press Android back
   log            Print the end of Metro's log (app console errors show up here)
@@ -33,7 +33,6 @@ SDK="${ANDROID_HOME:-$HOME/Library/Android/sdk}"
 ADB="$SDK/platform-tools/adb"
 EMULATOR="$SDK/emulator/emulator"
 PORT="${METRO_PORT:-8081}"
-SHOT_WIDTH=390
 EXPO_GO=host.exp.exponent
 ROOT="$(git rev-parse --show-toplevel)"
 APP_DIR="$ROOT/apps/mobile"
@@ -100,8 +99,9 @@ ensure_metro() {
   fi
   echo "Starting Metro on port $PORT..."
   : >"$METRO_LOG"
-  # Started from a subshell so it outlives the shell that ran this script.
-  (cd "$APP_DIR" && env -u CI nohup pnpm exec expo start --port "$PORT" </dev/null >>"$METRO_LOG" 2>&1 &)
+  # Started from a subshell so it outlives the shell that ran this script. The inner subshell's
+  # own output is redirected too: a caller piping this script would otherwise wait on it forever.
+  ( (cd "$APP_DIR" && exec env -u CI nohup pnpm exec expo start --port "$PORT") </dev/null >>"$METRO_LOG" 2>&1 &)
   local deadline=$((SECONDS + 90))
   until [[ -n "$(metro_pid)" ]]; do
     if ((SECONDS >= deadline)); then
@@ -162,17 +162,19 @@ cmd_shot() {
   local out=${1:?usage: shot <file.png>}
   mkdir -p "$(dirname "$out")"
   "$ADB" exec-out screencap -p >"$STATE/raw.png"
-  sips --resampleWidth "$SHOT_WIDTH" "$STATE/raw.png" --out "$out" >/dev/null
+  local width
+  width="$(awk -v w="$(device_width)" -v s="$(px_per_dp)" 'BEGIN { printf "%d", w / s + 0.5 }')"
+  sips --resampleWidth "$width" "$STATE/raw.png" --out "$out" >/dev/null
   echo "$out"
 }
 
-# Width in device pixels; an override line, if any, comes last and is the one in effect.
+# In device pixels. An override line, if any, comes last and is the one in effect.
 device_width() { "$ADB" shell wm size | tr -d '\r' | awk -F'[ x]' 'END { print $(NF - 1) }'; }
+px_per_dp() { "$ADB" shell wm density | tr -d '\r' | awk -F': ' 'END { print $2 / 160 }'; }
 
 cmd_tap() {
   local x=${1:?usage: tap <x> <y>} y=${2:?usage: tap <x> <y>}
-  read -r dx dy < <(awk -v x="$x" -v y="$y" -v s="$(device_width)" -v w="$SHOT_WIDTH" \
-    'BEGIN { printf "%d %d\n", x * s / w, y * s / w }')
+  read -r dx dy < <(awk -v x="$x" -v y="$y" -v s="$(px_per_dp)" 'BEGIN { printf "%d %d\n", x * s, y * s }')
   "$ADB" shell input tap "$dx" "$dy"
 }
 

@@ -8,7 +8,8 @@ description: Run the Mindfeed app on the Android emulator, drive it, and screens
 `scripts/android.sh start` boots the emulator if needed, starts this worktree's Metro, and returns once the app has loaded. Run `scripts/android.sh` alone for the other commands: `reload`, `shot`, `tap`, `text`, `back`, `log`, `stop`.
 
 - Metro watches files, so edits hot-reload. Use `reload` for a fresh mount (state cleared), never a new `start`.
-- `shot` saves a 390px-wide image, the same scale as the design's frames. `tap` takes coordinates measured on a shot.
+- `shot` saves an image at 1px per dp, the design's scale. `tap` takes coordinates measured on a shot.
+- The emulator's screen is wider and its status bar taller than the design's 390×844 frame, so compare sizes and gaps rather than absolute positions. The gear button at the top right is Expo Go's, not the app's.
 - After an action that animates (a press has a 150ms delay), wait about a second before `shot`.
 - `stop` when the check is done.
 

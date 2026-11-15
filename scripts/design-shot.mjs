@@ -13,7 +13,8 @@
 //   focus:<placeholder>       focus the input with that placeholder
 //   blur                      blur the focused element
 //   wait:<ms>                 wait (each click and type already waits 400ms for transitions)
-//   js:<expression>           evaluate JavaScript in the page
+//   js:<expression>           evaluate JavaScript in the page and print the result as JSON, e.g.
+//                             to measure: js:JSON.stringify(document.querySelector('input').getBoundingClientRect())
 //
 // Example:
 //   node scripts/design-shot.mjs "$URL" "$S/design" shot:signup 'click:Create account' shot:signup-error
@@ -152,9 +153,11 @@ async function run() {
       case 'wait':
         await wait(Number(arg));
         break;
-      case 'js':
-        await js(arg);
+      case 'js': {
+        const value = await js(arg);
+        if (value !== undefined) console.log(typeof value === 'string' ? value : JSON.stringify(value));
         break;
+      }
       default:
         throw new Error(`unknown step "${step}"`);
     }
