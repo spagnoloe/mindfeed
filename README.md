@@ -84,6 +84,8 @@ pnpm --filter mobile android
 
 The first run installs Expo Go on the emulator if it is missing.
 
+`scripts/android.sh start` does the same without Android Studio, waits until the app has loaded, and works around Expo Go showing a stale bundle. Coding agents use it, together with its `shot` and `tap` commands, for design checks (see `.claude/skills/run-android/SKILL.md`).
+
 ### On a physical phone over Wi-Fi
 
 The phone and the Mac must be on the same Wi-Fi network.
