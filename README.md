@@ -161,8 +161,8 @@ Friends install an APK from a link. JavaScript-only fixes then reach their phone
 6. **Environment variables**, from the dashboard's Project Settings → API. They live in EAS, never in the repo:
 
    ```sh
-   eas env:set --environment production --visibility plaintext --name EXPO_PUBLIC_SUPABASE_URL --value https://<project ref>.supabase.co
-   eas env:set --environment production --visibility plaintext --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value <anon key>
+   eas env:set --environment production --visibility plaintext --type string --name EXPO_PUBLIC_SUPABASE_URL --value https://<project ref>.supabase.co
+   eas env:set --environment production --visibility plaintext --type string --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value <anon key>
    ```
 
    The anon key ships inside the app anyway, so it isn't a secret. The database's row-level security protects the data.
