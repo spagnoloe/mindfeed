@@ -7,6 +7,13 @@
     "icon": "./assets/images/icon.png",
     "scheme": "mindfeed",
     "userInterfaceStyle": "light",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
     "ios": {
       "bundleIdentifier": "com.spagnoloe.mindfeed"
     },

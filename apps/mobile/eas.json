@@ -1,0 +1,18 @@
+{
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "production": {
+      "channel": "production",
+      "environment": "production",
+      "autoIncrement": true,
+      "node": "24.22.3",
+      "pnpm": "12.18.0",
+      "android": {
+        "buildType": "apk"
+      }
+    }
+  }
+}
