@@ -1,3 +1,5 @@
+import { content } from '@mindfeed/content';
+import { createClient } from '@supabase/supabase-js';
 import { execSync } from 'node:child_process';
 import path from 'node:path';
 
@@ -20,3 +22,76 @@ function localSupabase(): SupabaseBackendOptions {
 const connection = localSupabase();
 
 describeBackendContract('Supabase', () => createSupabaseBackend(connection));
+
+/**
+ * The Backend only ever asks for the signed-in user's rows, so the shared suite can't try
+ * to reach someone else's. This asks Supabase directly, as a client could, to prove the
+ * row-level security behind it.
+ */
+describe('Supabase row-level security on user data', () => {
+  const topicIds = content.topics.map((topic) => topic.id);
+
+  async function signedInClient(name: string) {
+    const client = createClient(connection.url, connection.anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
+    const { data, error } = await client.auth.signUp({
+      email: `rls-${crypto.randomUUID()}@example.com`,
+      password: 'readmore',
+      options: { data: { name } },
+    });
+    if (error || !data.user) throw error ?? new Error('sign-up failed');
+    return { client, userId: data.user.id };
+  }
+
+  let maya: Awaited<ReturnType<typeof signedInClient>>;
+  let sam: Awaited<ReturnType<typeof signedInClient>>;
+
+  beforeAll(async () => {
+    maya = await signedInClient('Maya Lin');
+    sam = await signedInClient('Sam Reyes');
+    const { error } = await maya.client.rpc('set_interests', { topic_ids: topicIds.slice(0, 3) });
+    if (error) throw new Error(error.message);
+  });
+
+  test("a user can't read another user's profile or Interests", async () => {
+    expect((await sam.client.from('profiles').select('id').eq('id', maya.userId)).data).toEqual([]);
+    expect((await sam.client.from('interests').select('topic_id').eq('user_id', maya.userId)).data).toEqual([]);
+    expect((await sam.client.from('profiles').select('id')).data).toEqual([{ id: sam.userId }]);
+  });
+
+  test("a user can't change another user's profile", async () => {
+    const { data } = await sam.client.from('profiles').update({ name: 'Hacked' }).eq('id', maya.userId).select();
+
+    expect(data).toEqual([]);
+    expect((await maya.client.from('profiles').select('name').single()).data).toEqual({ name: 'Maya Lin' });
+  });
+
+  test("a user can't add to or remove another user's Interests", async () => {
+    const inserted = await sam.client.from('interests').insert({ user_id: maya.userId, topic_id: topicIds[5] });
+    // 42501 is Postgres's insufficient_privilege, which row-level security raises.
+    expect(inserted.error?.code).toBe('42501');
+
+    const deleted = await sam.client.from('interests').delete().eq('user_id', maya.userId).select();
+    expect(deleted.data).toEqual([]);
+
+    const { data } = await maya.client.from('interests').select('topic_id');
+    expect(data?.map((row) => row.topic_id).sort()).toEqual(topicIds.slice(0, 3).sort());
+  });
+
+  test('a user can only change their own Interests through set_interests, which keeps at least 3', async () => {
+    const inserted = await maya.client.from('interests').insert({ user_id: maya.userId, topic_id: topicIds[5] });
+    expect(inserted.error?.code).toBe('42501');
+
+    const deleted = await maya.client.from('interests').delete().eq('user_id', maya.userId).select();
+    expect(deleted.data).toEqual([]);
+
+    const { data } = await maya.client.from('interests').select('topic_id');
+    expect(data).toHaveLength(3);
+  });
+
+  test('nobody signed in reads no profiles or Interests', async () => {
+    const anon = createClient(connection.url, connection.anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
+
+    expect((await anon.from('profiles').select('id')).data).toEqual([]);
+    expect((await anon.from('interests').select('topic_id')).data).toEqual([]);
+  });
+});

@@ -12,7 +12,8 @@ module.exports = defineConfig([
   {
     // ADR-0001: screens reach Supabase only through the Backend.
     files: ['apps/mobile/**/*.{ts,tsx}'],
-    ignores: ['apps/mobile/src/backend/supabase.ts'],
+    // The Supabase Backend itself, and its contract test, which checks row-level security directly.
+    ignores: ['apps/mobile/src/backend/supabase.ts', 'apps/mobile/src/backend/contract/supabase.contract.test.ts'],
     rules: {
       'no-restricted-imports': [
         'error',

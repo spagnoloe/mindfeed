@@ -13,6 +13,8 @@ import { useEffect, useState } from 'react';
 
 import { BackendProvider } from '@/backend/BackendProvider';
 import { backend } from '@/backend/instance';
+import { useInterests, useSession } from '@/backend/session';
+import { MIN_INTERESTS } from '@/backend/types';
 import { palette } from '@/design/theme';
 
 void SplashScreen.preventAutoHideAsync();
@@ -26,21 +28,53 @@ export default function RootLayout() {
     BricolageGrotesque_700Bold,
     BricolageGrotesque_800ExtraBold,
   });
-  const ready = fontsLoaded || fontError !== null;
-
-  useEffect(() => {
-    if (ready) void SplashScreen.hideAsync();
-  }, [ready]);
+  const fontsReady = fontsLoaded || fontError !== null;
 
   // The splash screen stays up until the fonts are in, so text never renders in a fallback font.
-  if (!ready) return null;
+  if (!fontsReady) return null;
 
   return (
     <BackendProvider backend={backend}>
       <QueryClientProvider client={queryClient}>
         <StatusBar style="dark" />
-        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: palette.paper } }} />
+        <AppRoutes />
       </QueryClientProvider>
     </BackendProvider>
+  );
+}
+
+/**
+ * Where the user may be: signed out → Sign up / Log in; signed in with fewer than 3
+ * Interests → onboarding; otherwise the tabs. A screen whose guard turns false redirects
+ * to the first one still allowed.
+ */
+function AppRoutes() {
+  const session = useSession();
+  const userId = session.data?.userId;
+  const interests = useInterests(userId);
+
+  // A user's Interests load only on launch and right after logging in or signing up, so
+  // until they arrive the user stays where they are: under the splash screen, or on
+  // Sign up / Log in. The navigator stays mounted throughout, as expo-router needs.
+  const loading = session.isPending || (userId !== undefined && interests.isPending);
+  const signedIn = !loading && userId !== undefined;
+  const onboarded = signedIn && (interests.data?.length ?? 0) >= MIN_INTERESTS;
+
+  useEffect(() => {
+    if (!loading) void SplashScreen.hideAsync();
+  }, [loading]);
+
+  return (
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: palette.paper } }}>
+      <Stack.Protected guard={!signedIn}>
+        <Stack.Screen name="sign-in" />
+      </Stack.Protected>
+      <Stack.Protected guard={signedIn && !onboarded}>
+        <Stack.Screen name="onboarding" />
+      </Stack.Protected>
+      <Stack.Protected guard={onboarded}>
+        <Stack.Screen name="(tabs)" />
+      </Stack.Protected>
+    </Stack>
   );
 }

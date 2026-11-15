@@ -1,9 +1,10 @@
 import { act, screen, userEvent } from '@testing-library/react-native';
 import { router, type Href } from 'expo-router';
-import { renderRouter } from 'expo-router/testing-library';
 import { Text, View } from 'react-native';
 
+import { backend } from '@/backend/instance';
 import { BackHeader } from '@/design/BackHeader';
+import { renderApp as renderRealApp } from '@/testing/renderApp';
 
 // The real app, with the fake Backend in place of Supabase.
 jest.mock('@/backend/instance', () => ({
@@ -20,12 +21,18 @@ function DeeperScreen() {
   );
 }
 
-const renderApp = () =>
-  renderRouter({ appDir: './src/app', overrides: { '(tabs)/explore/deeper': DeeperScreen } });
+const renderApp = () => renderRealApp({ '(tabs)/explore/deeper': DeeperScreen });
+
+// The tabs are for signed-in users who have picked their Interests.
+beforeAll(async () => {
+  await backend.auth.signUp({ name: 'Maya Lin', email: 'maya@example.com', password: 'readmore' });
+  const topics = await backend.content.getTopics();
+  await backend.userData.setInterests(topics.slice(0, 3).map((topic) => topic.id));
+});
 
 const tab = (name: string) => screen.getByRole('tab', { name });
 
-test('the app opens on Home', async () => {
+test('a signed-in user lands on Home', async () => {
   await renderApp();
 
   expect(await screen.findByText('mindfeed.')).toBeOnTheScreen();

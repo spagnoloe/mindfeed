@@ -16,5 +16,8 @@ const untranspiledPackages = [
 module.exports = {
   preset: 'jest-expo',
   setupFiles: ['<rootDir>/jest.setup.js'],
+  // expo-router's testing library re-mocks Reanimated with `react-native-reanimated/mock`, which
+  // can't load under Jest. Point that at the app's own mock too (see jest.reanimatedMock.js).
+  moduleNameMapper: { '^react-native-reanimated/mock$': '<rootDir>/jest.reanimatedMock.js' },
   transformIgnorePatterns: [`node_modules/(?!(?:\\.pnpm/[^/]+/node_modules/)?(${untranspiledPackages.join('|')})/)`],
 };
