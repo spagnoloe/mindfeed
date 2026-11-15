@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useSetInterests, useTopics } from '@/backend/session';
+import { useTopics } from '@/backend/content';
+import { useSetInterests } from '@/backend/session';
 import { MIN_INTERESTS } from '@/backend/types';
 import { PillButton } from '@/design/PillButton';
 import { TopicChip } from '@/design/TopicChip';

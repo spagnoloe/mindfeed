@@ -38,9 +38,3 @@ export function useSetInterests() {
     onSuccess: (_result, topicIds) => queryClient.setQueryData(interestsKey(session?.userId), topicIds),
   });
 }
-
-/** Every Topic, ordered by name. */
-export function useTopics() {
-  const { content } = useBackend();
-  return useQuery({ queryKey: ['topics'], queryFn: () => content.getTopics(), staleTime: Infinity });
-}

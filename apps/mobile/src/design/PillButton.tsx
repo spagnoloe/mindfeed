@@ -12,6 +12,8 @@ const tones = {
   ink: { backgroundColor: palette.ink, color: colors.white },
   /** Cancel, Done, Save, New stack, Add to stack. */
   card: { backgroundColor: palette.card, color: palette.ink },
+  /** An Idea's Like button while not liked. */
+  white: { backgroundColor: colors.white, color: palette.ink },
   /** The confirming button of a dialog. */
   danger: { backgroundColor: colors.danger, color: colors.white },
 };
@@ -19,14 +21,16 @@ const tones = {
 /** Height, label size and default weight of each pill size in the prototype. */
 const sizes = {
   /** Full-width CTAs at the bottom of a screen ("Create account", "Continue"). */
-  large: { height: 56, fontSize: 17, weight: 700 },
+  large: { height: 56, fontSize: 17, weight: 700, iconSize: 22 },
   /** "Log out". */
-  medium: { height: 52, fontSize: 16, weight: 700 },
+  medium: { height: 52, fontSize: 16, weight: 700, iconSize: 22 },
+  /** The Like and Add to stack buttons at the bottom of an Idea. */
+  bar: { height: 52, fontSize: 15, weight: 700, iconSize: 20 },
   /** Dialog buttons. */
-  dialog: { height: 48, fontSize: 15, weight: 600 },
+  dialog: { height: 48, fontSize: 15, weight: 600, iconSize: 22 },
   /** Header buttons ("Cancel", "Save", "Done"), sized to their label. */
-  small: { height: 40, fontSize: 15, weight: 600 },
-} satisfies Record<string, { height: number; fontSize: number; weight: FontWeight }>;
+  small: { height: 40, fontSize: 15, weight: 600, iconSize: 20 },
+} satisfies Record<string, { height: number; fontSize: number; weight: FontWeight; iconSize: number }>;
 
 export type PillButtonProps = {
   label: string;
@@ -48,7 +52,7 @@ export type PillButtonProps = {
 
 /** A raised pill button. */
 export function PillButton({ label, onPress, tone = 'card', size = 'large', weight, icon, dimmed = false, style }: PillButtonProps) {
-  const { height, fontSize, weight: sizeWeight } = sizes[size];
+  const { height, fontSize, weight: sizeWeight, iconSize } = sizes[size];
   const { backgroundColor, color, borderColor } = dimmed ? dimmedLook(tone) : { ...tones[tone], borderColor: palette.ink };
 
   return (
@@ -62,7 +66,7 @@ export function PillButton({ label, onPress, tone = 'card', size = 'large', weig
       ]}
     >
       <View style={styles.content}>
-        {icon && <Icon name={icon} size={size === 'small' ? 20 : 22} color={color} />}
+        {icon && <Icon name={icon} size={iconSize} color={color} />}
         <Text style={[textStyle(fontSize, weight ?? sizeWeight), { color }]}>{label}</Text>
       </View>
     </PressableSurface>

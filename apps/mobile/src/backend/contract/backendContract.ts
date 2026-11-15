@@ -134,6 +134,113 @@ export function describeBackendContract(name: string, makeBackend: () => Backend
       await expect(backend.userData.setInterests(content.topics.slice(0, 3).map((topic) => topic.id))).rejects.toThrow();
     });
 
+    describe('Home feed', () => {
+      const total = content.ideas.length;
+      // Few Ideas between them, so a short page holds all of them and some others.
+      const interests = ['Economics', 'Philosophy', 'History'].map((name) => content.topics.find((topic) => topic.name === name)!.id);
+      const inInterests = content.ideas.filter((idea) => interests.includes(idea.topicId));
+
+      beforeEach(async () => {
+        await backend.auth.signUp(newAccount());
+        await backend.userData.setInterests(interests);
+      });
+
+      const wholeFeed = async (seed: string) => (await backend.content.getFeedPage({ seed, offset: 0, limit: total })).map((idea) => idea.id);
+
+      test('lists every Idea once, those in the Interests first', async () => {
+        const ids = await wholeFeed('seed-a');
+
+        expect([...ids].sort()).toEqual(content.ideas.map((idea) => idea.id).sort());
+        expect([...ids.slice(0, inInterests.length)].sort()).toEqual(inInterests.map((idea) => idea.id).sort());
+      });
+
+      test('gives each Idea with its Topic and Book', async () => {
+        const [idea] = await backend.content.getFeedPage({ seed: 'seed-a', offset: 0, limit: 1 });
+        const source = content.ideas.find((candidate) => candidate.id === idea.id)!;
+        const topic = content.topics.find((candidate) => candidate.id === source.topicId)!;
+        const book = content.books.find((candidate) => candidate.id === source.bookId)!;
+
+        expect(idea).toEqual({
+          id: source.id,
+          title: source.title,
+          explanation: source.explanation,
+          topic: { id: topic.id, name: topic.name, hue: topic.hue },
+          book: { id: book.id, title: book.title, author: book.author, isbn: book.isbn, coverHue: book.coverHue },
+        });
+      });
+
+      test('the same seed gives the same order, and another seed a different one', async () => {
+        const order = await wholeFeed('seed-a');
+
+        expect(await wholeFeed('seed-a')).toEqual(order);
+        const other = await wholeFeed('seed-b');
+        expect(other).not.toEqual(order);
+        // Each group is shuffled on its own, so the Interests still come first.
+        expect([...other.slice(0, inInterests.length)].sort()).toEqual([...order.slice(0, inInterests.length)].sort());
+        expect(other.slice(0, inInterests.length)).not.toEqual(order.slice(0, inInterests.length));
+      });
+
+      test('pages follow on from each other, and wrap around past the last Idea forever', async () => {
+        const order = await wholeFeed('seed-a');
+        const page = async (offset: number, limit: number) =>
+          (await backend.content.getFeedPage({ seed: 'seed-a', offset, limit })).map((idea) => idea.id);
+
+        expect([...(await page(0, 10)), ...(await page(10, 10))]).toEqual(order.slice(0, 20));
+        expect(await page(total - 2, 4)).toEqual([...order.slice(total - 2), ...order.slice(0, 2)]);
+        expect(await page(total * 3 + 5, 3)).toEqual(order.slice(5, 8));
+      });
+    });
+
+    describe('Ideas, Topics and Books', () => {
+      const byTitle = (a: { title: string }, b: { title: string }) => (a.title < b.title ? -1 : a.title > b.title ? 1 : 0);
+
+      beforeEach(async () => {
+        await backend.auth.signUp(newAccount());
+      });
+
+      test('gets an Idea by id, with its Topic and Book', async () => {
+        const source = content.ideas[7];
+        const idea = await backend.content.getIdea(source.id);
+
+        expect(idea.title).toBe(source.title);
+        expect(idea.explanation).toBe(source.explanation);
+        expect(idea.topic.id).toBe(source.topicId);
+        expect(idea.book.id).toBe(source.bookId);
+      });
+
+      test('an unknown Idea or Book is rejected', async () => {
+        await expect(backend.content.getIdea(crypto.randomUUID())).rejects.toThrow();
+        await expect(backend.content.getBook(crypto.randomUUID())).rejects.toThrow();
+      });
+
+      test("lists a Topic's Ideas, ordered by title", async () => {
+        const topic = content.topics[0];
+
+        const ideas = await backend.content.getTopicIdeas(topic.id);
+
+        const expected = content.ideas.filter((idea) => idea.topicId === topic.id).sort(byTitle);
+        expect(ideas.map((idea) => idea.id)).toEqual(expected.map((idea) => idea.id));
+        expect(ideas.every((idea) => idea.topic.name === topic.name)).toBe(true);
+      });
+
+      test("gets a Book with its Idea count, and lists the Book's Ideas, ordered by title", async () => {
+        const book = content.books[1];
+        const expected = content.ideas.filter((idea) => idea.bookId === book.id).sort(byTitle);
+
+        await expect(backend.content.getBook(book.id)).resolves.toEqual({
+          id: book.id,
+          title: book.title,
+          author: book.author,
+          isbn: book.isbn,
+          coverHue: book.coverHue,
+          ideaCount: expected.length,
+        });
+        const ideas = await backend.content.getBookIdeas(book.id);
+        expect(ideas.map((idea) => idea.id)).toEqual(expected.map((idea) => idea.id));
+        expect(ideas.every((idea) => idea.book.title === book.title)).toBe(true);
+      });
+    });
+
     test('lists every Topic, ordered by name', async () => {
       await backend.auth.signUp(newAccount());
 
