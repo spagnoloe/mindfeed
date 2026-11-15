@@ -23,6 +23,6 @@ Get a `serve_url` from the claude_design MCP's `render_preview` for `MindfeedPre
 node scripts/design-shot.mjs "$URL" <out-dir> shot:signup 'click:Log in' shot:login
 ```
 
-The file header lists every step (`click:`, `type:`, `focus:`, `blur`, `wait:`, `js:`). The prototype opens on Sign up; reach other screens through clicks, like a user. The `serve_url` carries a token: keep it in the command line only.
+The file header lists every step (`click:`, `type:`, `focus:`, `blur`, `wait:`, `js:`). The prototype opens on Sign up; reach other screens through clicks, like a user. The `serve_url` carries a token: keep it in the command line only. `docs/design.md` maps where each screen's markup and logic live.
 
 Save every shot under your scratchpad, and compare the app and design shots of each screen side by side.

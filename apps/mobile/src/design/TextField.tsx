@@ -23,7 +23,8 @@ export function TextField({ label, rows, onFocus, onBlur, ...inputProps }: TextF
       <View style={[styles.box, focused && styles.focused]}>
         <TextInput
           accessibilityLabel={label}
-          placeholderTextColor={palette.mut}
+          // The design sets no placeholder colour, so it shows the browser's default grey.
+          placeholderTextColor="#757575"
           {...inputProps}
           multiline={isTextarea}
           onFocus={(e) => {
