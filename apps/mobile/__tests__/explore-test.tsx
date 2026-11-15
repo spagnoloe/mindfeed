@@ -82,6 +82,13 @@ const results = () =>
     return `${text('search-result-title')} | ${text('search-result-subtitle')}`;
   });
 
+test("the search bar keeps the keyboard from capitalising the query's first letter", async () => {
+  await openExplore();
+  await screen.findByTestId('trending-topics');
+
+  expect(searchBar()).toHaveProp('autoCapitalize', 'none');
+});
+
 test('focusing the search bar hides the heading and sections, shows Cancel and the hint until the user types', async () => {
   const { user } = await openExplore();
   await screen.findByTestId('trending-topics');

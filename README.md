@@ -121,3 +121,98 @@ pnpm lint            # ESLint across the workspace
 pnpm test            # content checks, app tests and the fake Backend's contract tests (no server needed)
 pnpm test:contract   # the Backend contract suite and content-table access rules against local Supabase (needs `supabase start`)
 ```
+
+## Releasing to Android
+
+Friends install an APK from a link. JavaScript-only fixes then reach their phones through EAS Update without a reinstall. Run every command below from `apps/mobile`, except the `supabase` and `pnpm seed:generate` ones, which run from the repo root.
+
+### One-time setup
+
+1. **Install `expo-updates`**, the app's update client, from `apps/mobile`, and commit the `package.json` and `pnpm-lock.yaml` changes:
+
+   ```sh
+   npx expo install expo-updates
+   ```
+
+2. **Link the production Supabase project** (`mindfeed`) from the repo root:
+
+   ```sh
+   supabase link --project-ref <project ref>
+   ```
+
+3. **Production auth settings.** `supabase db push` doesn't carry the `[auth]` settings in `supabase/config.toml`, so copy them by hand. In the Supabase dashboard, go to Authentication → Sign In / Providers → Email, turn off **Confirm email** and set the minimum password length to 6.
+4. **Schema and content:**
+
+   ```sh
+   supabase db push --remote --include-seed
+   ```
+
+   Without `--remote`, the Supabase CLI targets the local database and prints "Local database is up to date". Check that the first line of output says `Target: project mindfeed`.
+
+5. **EAS project:**
+
+   ```sh
+   eas init               # creates the project on expo.dev and adds its id to app.json
+   eas update:configure   # adds the update URL to app.json
+   ```
+
+   Commit the `app.json` changes.
+
+6. **Environment variables**, from the dashboard's Project Settings → API. They live in EAS, never in the repo:
+
+   ```sh
+   eas env:set --environment production --visibility plaintext --type string --name EXPO_PUBLIC_SUPABASE_URL --value https://<project ref>.supabase.co
+   eas env:set --environment production --visibility plaintext --type string --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value <anon key>
+   ```
+
+   The anon key ships inside the app anyway, so it isn't a secret. The database's row-level security protects the data.
+
+### First release
+
+```sh
+eas build --platform android --profile production
+```
+
+The build takes about 15 minutes. The first build also asks to generate an Android keystore: answer yes and EAS keeps it. Every later APK is signed with it, and Android only installs an APK over an existing one when the keystores match.
+
+When the build finishes, share the `.apk` link printed after "Android app:", not the "See logs" build page, which needs an expo.dev login. Friends open it on their phone, download the APK and allow installs from their browser when Android asks.
+
+### A JavaScript-only fix
+
+A change to TypeScript, styles or images only:
+
+```sh
+eas update --channel production --environment production --message "<what changed>"
+```
+
+`--environment production` makes the update use the production Supabase variables, not the ones in your local `.env`. Installed apps download the update on their next launch and run it on the launch after that.
+
+### A native change
+
+Anything that changes the native app needs a new APK; `eas update` can't deliver it. Build and share the new link as in **First release**. Friends install it over the old one, and their accounts, Likes and Stacks stay, because they live in Supabase.
+
+- **Native code** (adding or upgrading a package with native code, an Expo SDK upgrade, a new config plugin): bump `version` in `app.json` first, for example `1.0.0` → `1.1.0`.
+- **Icon or splash screen only**: keep `version` as it is.
+
+The bump is what keeps updates safe. Each build only accepts updates published for its own `version` (the `appVersion` runtime version policy), so JavaScript that expects new native code never reaches an old APK. Forget the bump after a native code change and the next update reaches old APKs too, which may then crash. An icon change doesn't affect what JavaScript can run, so old and new APKs can keep sharing updates.
+
+### A content update
+
+Edit `packages/content` as in **Changing the content**, then:
+
+```sh
+pnpm seed:generate
+supabase db push --remote --include-seed
+```
+
+The seed only inserts and updates Topics, Books and Ideas, so re-running it is harmless and never touches profiles, Likes or Stacks. It never deletes either: a row removed from `packages/content` stays in production until you delete it by hand.
+
+### A schema change
+
+Add a migration under `supabase/migrations`, check it locally with `supabase db reset`, then:
+
+```sh
+supabase db push --remote
+```
+
+If the app's code depends on the new schema, push the migration before you publish the update or build that uses it.
