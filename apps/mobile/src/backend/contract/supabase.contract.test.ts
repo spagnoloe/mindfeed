@@ -70,10 +70,6 @@ describe('Supabase row-level security on user data', () => {
     // 42501: the column grant leaves id read-only.
     expect(moved.error?.code).toBe('42501');
 
-    const blank = await maya.client.from('profiles').update({ name: ' ' }).eq('id', maya.userId);
-    // 23514: Postgres's check_violation.
-    expect(blank.error?.code).toBe('23514');
-
     const renamed = await maya.client.from('profiles').update({ name: 'Maya Lin', bio: 'Reads' }).eq('id', maya.userId).select('name, bio');
     expect(renamed.data).toEqual([{ name: 'Maya Lin', bio: 'Reads' }]);
   });

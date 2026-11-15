@@ -234,7 +234,7 @@ export function createSupabaseBackend({ url, anonKey, storage }: SupabaseBackend
       },
       async updateProfile({ name, bio }) {
         const userId = await signedInUserId();
-        // A blank name breaks the table's check, which rejects the update.
+        if (!name.trim()) throw new Error('A profile needs a name');
         const { data, error } = await client
           .from('profiles')
           .update({ name: name.trim(), bio: bio.trim() })
