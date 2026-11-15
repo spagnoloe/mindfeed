@@ -109,7 +109,7 @@ function SearchResults({ query }: { query: string }) {
   if (!query.trim()) body = <Text style={styles.searchNote}>Search across ideas, topics and books.</Text>;
   else if (search.isError) body = <ScreenStatus error onRetry={() => void search.refetch()} />;
   else if (!search.data) body = null;
-  else if (search.data.length === 0) body = <Text style={styles.searchNote}>No results for “{debounced}”.</Text>;
+  else if (search.data.length === 0) body = <Text style={styles.searchNote}>No results for “{query}”.</Text>;
   else {
     body = search.data.map((result) => {
       const row = resultRow(result);
