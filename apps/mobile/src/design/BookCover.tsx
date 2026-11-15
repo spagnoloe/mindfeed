@@ -19,6 +19,8 @@ const sizes = {
   small: { width: 28, height: 42, borderRadius: 3, boxShadow: '0px 1px 3px rgba(0,0,0,0.15)' },
   /** An Idea's Source card. */
   medium: { width: 44, height: 66, borderRadius: 3, boxShadow: '0px 1px 3px rgba(0,0,0,0.15)' },
+  /** Explore's row of Books. */
+  shelf: { width: 100, height: 150, borderRadius: 5, boxShadow: '0px 2px 6px rgba(0,0,0,0.14)' },
   /** The Book screen's header. */
   large: { width: 86, height: 129, borderRadius: 5, boxShadow: '0px 2px 8px rgba(0,0,0,0.16)' },
 };

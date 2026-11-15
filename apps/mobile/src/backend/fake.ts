@@ -8,9 +8,11 @@ import {
   type Book,
   type Idea,
   type Profile,
+  type SearchResult,
   type Session,
   type StackSummary,
   type Topic,
+  type TopicSummary,
 } from './types';
 
 /** A Stack's `ideas` are Idea ids, first added first. */
@@ -23,10 +25,16 @@ const topics = content.topics
   .map(({ id, name, hue }) => ({ id, name, hue }))
   .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
 
+const trendingTopics: Topic[] = content.topics
+  .filter((topic) => topic.trendingOrder !== null)
+  .sort((a, b) => a.trendingOrder! - b.trendingOrder!)
+  .map(({ id, name, hue }) => ({ id, name, hue }));
+
 const topicsById = new Map<string, Topic>(topics.map((topic) => [topic.id, topic]));
 const booksById = new Map<string, Book>(
   content.books.map(({ id, title, author, isbn, coverHue }) => [id, { id, title, author, isbn, coverHue }]),
 );
+const booksByTitle = [...booksById.values()].sort((a, b) => (a.title < b.title ? -1 : a.title > b.title ? 1 : 0));
 const ideas: Idea[] = content.ideas.map(({ id, title, explanation, topicId, bookId }) => ({
   id,
   title,
@@ -36,6 +44,11 @@ const ideas: Idea[] = content.ideas.map(({ id, title, explanation, topicId, book
 }));
 
 const byTitle = (a: Idea, b: Idea) => (a.title < b.title ? -1 : a.title > b.title ? 1 : 0);
+
+const topicSummary = (topic: Topic): TopicSummary => ({
+  ...topic,
+  ideaCount: ideas.filter((idea) => idea.topic.id === topic.id).length,
+});
 
 /** A copy, so callers can't change the fake's content. */
 const copy = (idea: Idea): Idea => ({ ...idea, topic: { ...idea.topic }, book: { ...idea.book } });
@@ -114,6 +127,15 @@ export function createFakeBackend(): Backend {
       async getTopics() {
         return topics.map((topic) => ({ ...topic }));
       },
+      async getTrendingTopics() {
+        return trendingTopics.map((topic) => ({ ...topic }));
+      },
+      async getTopicSummaries() {
+        return topics.map(topicSummary);
+      },
+      async getBooks() {
+        return booksByTitle.map((book) => ({ ...book }));
+      },
       async getFeedPage({ seed, offset, limit }) {
         if (offset < 0 || limit < 1 || limit > MAX_FEED_PAGE) throw new Error('Invalid feed page');
         const interests = signedInAccount().interests;
@@ -136,6 +158,19 @@ export function createFakeBackend(): Backend {
       },
       async getBookIdeas(bookId) {
         return ideas.filter((idea) => idea.book.id === bookId).sort(byTitle).map(copy);
+      },
+      async search(query) {
+        const needle = query.trim().toLowerCase();
+        if (!needle) return [];
+        const matches = (...texts: string[]) => texts.some((text) => text.toLowerCase().includes(needle));
+        return [
+          ...topics.filter((topic) => matches(topic.name)).map((topic): SearchResult => ({ kind: 'topic', ...topicSummary(topic) })),
+          ...booksByTitle.filter((book) => matches(book.title, book.author)).map(({ id, title, author }): SearchResult => ({ kind: 'book', id, title, author })),
+          ...ideas
+            .filter((idea) => matches(idea.title, idea.explanation))
+            .sort(byTitle)
+            .map(({ id, title, book }): SearchResult => ({ kind: 'idea', id, title, bookTitle: book.title })),
+        ];
       },
     },
     userData: {

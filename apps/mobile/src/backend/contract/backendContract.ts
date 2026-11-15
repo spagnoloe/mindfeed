@@ -1,6 +1,6 @@
 import { content } from '@mindfeed/content';
 
-import type { Backend } from '../types';
+import type { Backend, SearchResult } from '../types';
 
 /**
  * The behaviour every Backend must have. Each implementation runs this suite,
@@ -465,6 +465,94 @@ export function describeBackendContract(name: string, makeBackend: () => Backend
         const ideas = await backend.content.getBookIdeas(book.id);
         expect(ideas.map((idea) => idea.id)).toEqual(expected.map((idea) => idea.id));
         expect(ideas.every((idea) => idea.book.title === book.title)).toBe(true);
+      });
+    });
+
+    describe('Explore', () => {
+      beforeEach(async () => {
+        await backend.auth.signUp(newAccount());
+      });
+
+      test('lists the Trending topics in their trending order', async () => {
+        const trending = await backend.content.getTrendingTopics();
+
+        expect(trending.map((topic) => topic.name)).toEqual(['Psychology', 'Investing', 'Leadership', 'History']);
+        expect(trending[0]).toEqual({ id: content.topics[1].id, name: 'Psychology', hue: 30 });
+      });
+
+      test('lists every Topic with its Idea count, ordered by name', async () => {
+        const topics = await backend.content.getTopicSummaries();
+
+        expect(topics.map(({ name, ideaCount }) => `${name} ${ideaCount}`)).toEqual([
+          'Business 8',
+          'Communication 7',
+          'Decision-making 7',
+          'Economics 3',
+          'History 6',
+          'Investing 9',
+          'Leadership 8',
+          'Philosophy 5',
+          'Psychology 7',
+        ]);
+        expect(topics).toContainEqual({ id: content.topics[0].id, name: 'History', hue: 65, ideaCount: 6 });
+      });
+
+      test('lists every Book, ordered by title', async () => {
+        const books = await backend.content.getBooks();
+
+        expect(books.map((book) => book.title)).toEqual(['Conscious Business', 'Principles', 'Sapiens', 'Start with Why', 'The Intelligent Investor']);
+        expect(books).toContainEqual({
+          id: content.books[0].id,
+          title: 'Sapiens',
+          author: 'Yuval Noah Harari',
+          isbn: '9780062316097',
+          coverHue: 65,
+        });
+      });
+    });
+
+    describe('Search', () => {
+      const ideaId = (title: string) => content.ideas.find((idea) => idea.title === title)!.id;
+      const labels = (results: SearchResult[]) =>
+        results.map((result) => `${result.kind}: ${result.kind === 'topic' ? result.name : result.title}`);
+
+      beforeEach(async () => {
+        await backend.auth.signUp(newAccount());
+      });
+
+      test('matches Topic names, Book titles and Idea titles and explanations case-insensitively, grouped Topics, Books, Ideas', async () => {
+        const results = await backend.content.search('iNVeSt');
+
+        expect(labels(results)).toEqual([
+          'topic: Investing',
+          'book: The Intelligent Investor',
+          // The first two by title, the others by explanation, all ordered by title.
+          'idea: Invest the same amount on a schedule',
+          'idea: Investing is not speculating',
+          'idea: Past growth is a poor forecast',
+          'idea: Price is not value',
+          'idea: Your effort should set your strategy',
+        ]);
+        expect(results.slice(0, 3)).toEqual([
+          { kind: 'topic', id: content.topics[4].id, name: 'Investing', hue: 110, ideaCount: 9 },
+          { kind: 'book', id: content.books[3].id, title: 'The Intelligent Investor', author: 'Benjamin Graham' },
+          { kind: 'idea', id: ideaId('Invest the same amount on a schedule'), title: 'Invest the same amount on a schedule', bookTitle: 'The Intelligent Investor' },
+        ]);
+      });
+
+      test('matches Book authors', async () => {
+        await expect(backend.content.search('DALIO')).resolves.toEqual([
+          { kind: 'book', id: content.books[1].id, title: 'Principles', author: 'Ray Dalio' },
+        ]);
+      });
+
+      test('ignores surrounding spaces, and a blank query or one matching nothing finds nothing', async () => {
+        expect(labels(await backend.content.search('  wishful '))).toEqual(['idea: Face reality as it is']);
+        await expect(backend.content.search('   ')).resolves.toEqual([]);
+        await expect(backend.content.search('zzzz')).resolves.toEqual([]);
+        // Wildcards match only themselves.
+        await expect(backend.content.search('%')).resolves.toEqual([]);
+        await expect(backend.content.search('_')).resolves.toEqual([]);
       });
     });
 

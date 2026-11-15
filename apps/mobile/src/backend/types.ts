@@ -79,6 +79,12 @@ export const MAX_FEED_PAGE = 100;
 export interface ContentRepository {
   /** Every Topic, ordered by name. */
   getTopics(): Promise<Topic[]>;
+  /** The Trending topics, in their trending order. */
+  getTrendingTopics(): Promise<Topic[]>;
+  /** Every Topic with its Idea count, ordered by name. */
+  getTopicSummaries(): Promise<TopicSummary[]>;
+  /** Every Book, ordered by title. */
+  getBooks(): Promise<Book[]>;
   /**
    * A page of the signed-in user's Home feed: every Idea in their Interests, shuffled, then every
    * other Idea, shuffled. Positions past the last Idea wrap around to the first, so the feed never
@@ -94,7 +100,22 @@ export interface ContentRepository {
   getBook(bookId: string): Promise<BookSummary>;
   /** A Book's Ideas, ordered by title. */
   getBookIdeas(bookId: string): Promise<Idea[]>;
+  /**
+   * The Topics whose name, Books whose title or author, and Ideas whose title or explanation
+   * contain `query`, ignoring case and surrounding spaces: Topics by name, then Books by title,
+   * then Ideas by title. A blank query finds nothing.
+   */
+  search(query: string): Promise<SearchResult[]>;
 }
+
+/** A Topic with how many Ideas it has ("N ideas" in Explore). */
+export type TopicSummary = Topic & { ideaCount: number };
+
+/** One search result, with what its row in Explore shows. */
+export type SearchResult =
+  | ({ kind: 'topic' } & TopicSummary)
+  | { kind: 'book'; id: string; title: string; author: string }
+  | { kind: 'idea'; id: string; title: string; bookTitle: string };
 
 export type Profile = { name: string; bio: string };
 

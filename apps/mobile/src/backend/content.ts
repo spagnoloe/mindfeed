@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query';
 
 import { useBackend } from './BackendProvider';
 
@@ -11,6 +11,37 @@ export const FEED_PAGE_SIZE = 10;
 export function useTopics() {
   const { content } = useBackend();
   return useQuery({ queryKey: ['topics'], queryFn: () => content.getTopics(), staleTime: Infinity });
+}
+
+/** The Trending topics, in their trending order. */
+export function useTrendingTopics() {
+  const { content } = useBackend();
+  return useQuery({ queryKey: ['trendingTopics'], queryFn: () => content.getTrendingTopics(), staleTime: Infinity });
+}
+
+/** Every Topic with its Idea count, ordered by name. */
+export function useTopicSummaries() {
+  const { content } = useBackend();
+  return useQuery({ queryKey: ['topicSummaries'], queryFn: () => content.getTopicSummaries(), staleTime: Infinity });
+}
+
+/** Every Book, ordered by title. */
+export function useBooks() {
+  const { content } = useBackend();
+  return useQuery({ queryKey: ['books'], queryFn: () => content.getBooks(), staleTime: Infinity });
+}
+
+/** The search results for `query`, keeping the last results while the next ones load. Disabled while it is blank. */
+export function useSearch(query: string) {
+  const { content } = useBackend();
+  const trimmed = query.trim();
+  return useQuery({
+    queryKey: ['search', trimmed.toLowerCase()],
+    queryFn: () => content.search(trimmed),
+    enabled: trimmed !== '',
+    placeholderData: keepPreviousData,
+    staleTime: Infinity,
+  });
 }
 
 /** The signed-in user's endless Home feed, shuffled by `seed`. Each page follows on from the last. */
