@@ -30,7 +30,8 @@ export function AddToStack({ idea, onClose }: { idea: Idea; onClose: () => void 
           <Text textBreakStrategy="balanced" style={styles.idea}>
             {idea.title}
           </Text>
-          {stacks.isPending ? (
+          {/* Until both load, a row could show the wrong tick, and a tap would act on it. */}
+          {stacks.isPending || (filedIn === undefined && !stacks.isError) ? (
             <ScreenStatus />
           ) : stacks.isError ? (
             <ScreenStatus error onRetry={() => void stacks.refetch()} />
@@ -46,8 +47,8 @@ export function AddToStack({ idea, onClose }: { idea: Idea; onClose: () => void 
                 <StackRow
                   key={stack.id}
                   stack={stack}
-                  checked={filedIn.includes(stack.id)}
-                  onPress={() => toggleStack.mutate({ stack, idea, add: !filedIn.includes(stack.id) })}
+                  checked={filedIn?.includes(stack.id) ?? false}
+                  onPress={() => toggleStack.mutate({ stack, idea, add: !filedIn?.includes(stack.id) })}
                 />
               ))}
             </View>

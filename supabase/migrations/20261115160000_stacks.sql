@@ -6,7 +6,7 @@
 
 create table public.stacks (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  user_id uuid not null references auth.users (id) on delete cascade,
   name text not null check (length(btrim(name)) > 0),
   description text not null default '',
   created_at timestamptz not null default now()
@@ -78,8 +78,8 @@ as $$
 declare
   new_id uuid;
 begin
-  insert into public.stacks (name, description)
-  values (btrim(stack_name), btrim(coalesce(stack_description, '')))
+  insert into public.stacks (user_id, name, description)
+  values ((select auth.uid()), btrim(stack_name), btrim(coalesce(stack_description, '')))
   returning id into new_id;
   if idea_id is not null then
     insert into public.stack_ideas (stack_id, idea_id) values (new_id, create_stack.idea_id);

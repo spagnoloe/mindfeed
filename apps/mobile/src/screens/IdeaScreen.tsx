@@ -15,7 +15,7 @@ import { palette, textStyle, topicTint } from '@/design/theme';
 import { useOpenInTab } from '@/navigation/useOpenInTab';
 
 import { AddToStack } from './AddToStack';
-import { ideaCount } from './ideaCount';
+import { ideaCount, plural } from './ideaCount';
 
 /**
  * Idea Detail, pushed within the current tab. The Topic chip and the Source card open the Topic
@@ -30,7 +30,7 @@ export function IdeaScreen() {
   const book = useBook(idea.data?.book.id);
   const liked = useIsLiked(id);
   const toggleLike = useToggleLike();
-  const stackCount = useStacksWith(id).length;
+  const stackCount = useStacksWith(id)?.length ?? 0;
   const [picking, setPicking] = useState(false);
 
   return (
@@ -84,7 +84,7 @@ export function IdeaScreen() {
               style={styles.action}
             />
             <PillButton
-              label={stackCount > 0 ? `In ${stackCount} ${stackCount === 1 ? 'stack' : 'stacks'}` : 'Add to stack'}
+              label={stackCount > 0 ? `In ${plural(stackCount, 'stack')}` : 'Add to stack'}
               icon="library_add"
               size="bar"
               onPress={() => setPicking(true)}

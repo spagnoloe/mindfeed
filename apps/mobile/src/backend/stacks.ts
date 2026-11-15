@@ -5,7 +5,9 @@ import { useSession } from './session';
 import type { Idea, NewStack, StackSummary } from './types';
 
 const stacksKey = (userId: string | undefined) => ['stacks', userId] as const;
-const stacksWithKey = (userId: string | undefined, ideaId: string | undefined) => ['stacksWith', userId, ideaId] as const;
+/** Every Idea's Stacks for one user: the prefix of {@link stacksWithKey}. */
+const allStacksWithKey = (userId: string | undefined) => ['stacksWith', userId] as const;
+const stacksWithKey = (userId: string | undefined, ideaId: string | undefined) => [...allStacksWithKey(userId), ideaId] as const;
 const toggleStackKey = ['toggleStack'] as const;
 
 /** The signed-in user's Stacks, newest first. */
@@ -20,8 +22,8 @@ export function useStacks() {
   });
 }
 
-/** The ids of the signed-in user's Stacks that hold the Idea. Empty until they load. */
-export function useStacksWith(ideaId: string | undefined): string[] {
+/** The ids of the signed-in user's Stacks that hold the Idea. Undefined until they load. */
+export function useStacksWith(ideaId: string | undefined): string[] | undefined {
   const { userData } = useBackend();
   const { data: session } = useSession();
   const { data } = useQuery({
@@ -30,7 +32,7 @@ export function useStacksWith(ideaId: string | undefined): string[] {
     enabled: session?.userId !== undefined && ideaId !== undefined,
     staleTime: Infinity,
   });
-  return data ?? [];
+  return data;
 }
 
 /**
@@ -74,9 +76,11 @@ export function useToggleStack() {
       queryClient.setQueryData(context.withKey, context.previousWith);
     },
     onSettled: () => {
+      // Resync with the server once the last of a quick run of toggles settles, so an earlier
+      // one's refetch can't undo a later one's change on screen.
       if (queryClient.isMutating({ mutationKey: toggleStackKey }) !== 1) return;
       void queryClient.invalidateQueries({ queryKey: stacksKey(userId) });
-      void queryClient.invalidateQueries({ queryKey: ['stacksWith', userId] });
+      void queryClient.invalidateQueries({ queryKey: allStacksWithKey(userId) });
     },
   });
 }
@@ -90,7 +94,10 @@ export function useCreateStack() {
 
   return useMutation({
     mutationFn: (details: NewStack) => userData.createStack(details),
-    onSuccess: (stack, { ideaId }) => {
+    onSuccess: async (stack, { ideaId }) => {
+      // A fetch that started before the Stack existed would otherwise overwrite it when it lands.
+      await queryClient.cancelQueries({ queryKey: stacksKey(userId) });
+      if (ideaId !== undefined) await queryClient.cancelQueries({ queryKey: stacksWithKey(userId, ideaId) });
       queryClient.setQueryData<StackSummary[]>(stacksKey(userId), (stacks) => stacks && [stack, ...stacks]);
       if (ideaId !== undefined) {
         queryClient.setQueryData<string[]>(stacksWithKey(userId, ideaId), (ids) => ids && [...ids, stack.id]);

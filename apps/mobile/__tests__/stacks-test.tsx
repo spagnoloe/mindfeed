@@ -51,6 +51,7 @@ const stackRow = (name: string) => screen.getByRole('checkbox', { name });
 const stackIds = async (ideaId: string) => backend.userData.getStacksWith(ideaId);
 
 test('from a card, New stack → name → "Create & add" files the Idea in a new Stack, and Idea Detail reads "In 1 stack"', async () => {
+  await backend.userData.createStack({ name: 'Work' });
   const { user } = await openHome();
   const { card, idea, sheet } = await openSheetFromCard(user);
   expect(card.getByRole('button', { name: 'Add to stack' })).not.toBeSelected();
@@ -65,8 +66,10 @@ test('from a card, New stack → name → "Create & add" files the Idea in a new
 
   // Back on the sheet, the new Stack is at the top, ticked.
   await waitFor(() => expect(screen.queryByTestId('new-stack-form')).not.toBeOnTheScreen());
+  expect(screen.getAllByRole('checkbox').map((row) => row.props.accessibilityLabel)).toEqual(['Thinking better', 'Work']);
   expect(stackRow('Thinking better')).toBeChecked();
-  expect(screen.getByText('1 idea')).toBeOnTheScreen();
+  expect(within(stackRow('Thinking better')).getByText('1 idea')).toBeOnTheScreen();
+  expect(stackRow('Work')).not.toBeChecked();
   const [stack] = await backend.userData.getStacks();
   expect(stack).toMatchObject({ name: 'Thinking better', description: 'Mental models', ideaCount: 1 });
   await expect(stackIds(idea.id)).resolves.toEqual([stack.id]);

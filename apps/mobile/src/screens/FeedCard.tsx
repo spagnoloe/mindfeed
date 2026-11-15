@@ -24,7 +24,7 @@ const EXPLANATION_LINES = 7;
 export function FeedCard({ idea, height, onOpen, testID }: { idea: Idea; height: number; onOpen: () => void; testID?: string }) {
   const liked = useIsLiked(idea.id);
   const toggleLike = useToggleLike();
-  const inStack = useStacksWith(idea.id).length > 0;
+  const inStack = (useStacksWith(idea.id)?.length ?? 0) > 0;
   const [picking, setPicking] = useState(false);
 
   return (

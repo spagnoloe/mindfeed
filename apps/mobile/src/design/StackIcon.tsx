@@ -3,10 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import type { Topic } from '@/backend/types';
 
 import { Icon } from './Icon';
-import { palette, topicTint } from './theme';
-
-/** An empty Stack's icon background. */
-const EMPTY_STACK = '#efe9dd';
+import { colors, palette, topicTint } from './theme';
 
 /**
  * A Stack's square icon, drawn as two layered cards: tinted by the Topic of its first Idea, or
@@ -14,7 +11,7 @@ const EMPTY_STACK = '#efe9dd';
  */
 export function StackIcon({ firstTopic }: { firstTopic: Topic | null }) {
   return (
-    <View style={[styles.icon, { backgroundColor: firstTopic ? topicTint(firstTopic.hue) : EMPTY_STACK }]}>
+    <View style={[styles.icon, { backgroundColor: firstTopic ? topicTint(firstTopic.hue) : colors.emptyStack }]}>
       <Icon name="stacks" size={20} />
     </View>
   );
