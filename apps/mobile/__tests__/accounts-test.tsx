@@ -1,8 +1,7 @@
-import { act, screen, userEvent } from '@testing-library/react-native';
+import { screen, userEvent } from '@testing-library/react-native';
 
 import { backend } from '@/backend/instance';
-import { PRESS_DELAY_MS } from '@/design/PressableSurface';
-import { renderApp } from '@/testing/renderApp';
+import { renderApp, settlePress } from '@/testing/renderApp';
 
 // The real app, with the fake Backend in place of Supabase.
 jest.mock('@/backend/instance', () => ({
@@ -142,8 +141,7 @@ test('the onboarding CTA reads "Pick N more" and does nothing until 3 Topics are
   await user.press(await screen.findByRole('button', { name: 'Pick 2 more' }));
   await user.press(screen.getByRole('button', { name: 'Psychology' }));
   await user.press(await screen.findByRole('button', { name: 'Pick 1 more' }));
-  // Let that press finish showing, so its action would have run.
-  await act(() => jest.advanceTimersByTimeAsync(PRESS_DELAY_MS * 2));
+  await settlePress();
 
   expect(screen.getByText('What are you curious about?')).toBeOnTheScreen();
   await expect(backend.userData.getInterests()).resolves.toEqual([]);
