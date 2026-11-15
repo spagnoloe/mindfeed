@@ -88,6 +88,6 @@ function dimmedLook(tone: keyof typeof tones) {
 
 const styles = StyleSheet.create({
   pill: { alignItems: 'center', justifyContent: 'center' },
-  small: { paddingHorizontal: 16, alignSelf: 'flex-start' },
+  small: { paddingHorizontal: 16 },
   content: { flexDirection: 'row', alignItems: 'center', gap: 8 },
 });
