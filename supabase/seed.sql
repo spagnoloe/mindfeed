@@ -19,7 +19,7 @@ on conflict (id) do update set
 insert into public.books (id, title, author, isbn, cover_hue) values
   ('d7f76860-2300-4fe3-b9c5-bc9bdc7beecd', 'Sapiens', 'Yuval Noah Harari', '9780062316097', 65),
   ('d6b7241d-ac32-44b6-be99-997e6f18a87a', 'Principles', 'Ray Dalio', '9781501124020', 225),
-  ('50c0fe45-63f9-4136-bf51-847fd00375e7', 'Conscious Business', 'Fred Kofman', '9781591793250', 345),
+  ('50c0fe45-63f9-4136-bf51-847fd00375e7', 'Conscious Business', 'Fred Kofman', '9781591795179', 345),
   ('ddf5d78c-73c7-4c60-b981-6daae582ef17', 'The Intelligent Investor', 'Benjamin Graham', '9780060555665', 110),
   ('a54b746f-1766-4957-93cf-d45c8030ee42', 'Start with Why', 'Simon Sinek', '9781591846444', 255)
 on conflict (id) do update set
