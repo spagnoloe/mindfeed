@@ -6,7 +6,18 @@ Interesting ideas from great books, one at a time. An Expo (React Native) app on
 
 - `apps/mobile`: the Expo app (expo-router, TypeScript).
 - `packages/content`: the master copy of Topics, Books and Ideas.
-- `supabase`: the local Supabase project (`config.toml`; migrations and seed arrive with later tickets).
+- `supabase`: the local Supabase project: `config.toml`, `migrations/`, and `seed.sql`, which is generated from `packages/content`.
+
+## Changing the content
+
+Edit the Topics, Books and Ideas in `packages/content/src`. Every row has a UUID literal that never changes; give a new row a fresh one (`uuidgen | tr A-Z a-z`). Then regenerate the seed and load it:
+
+```sh
+pnpm seed:generate   # rewrites supabase/seed.sql; commit it with the content change
+supabase db reset    # local only: reapplies migrations and the seed
+```
+
+`pnpm test` fails if a content rule is broken or if `supabase/seed.sql` is out of date.
 
 Screens reach Supabase only through the `Backend` in `apps/mobile/src/backend`. See [ADR-0001](docs/adr/0001-supabase-behind-async-repositories.md).
 
@@ -105,6 +116,6 @@ Run these from the repo root. CI runs all of them on every PR.
 ```sh
 pnpm typecheck       # TypeScript across the workspace
 pnpm lint            # ESLint across the workspace
-pnpm test            # app tests and the fake Backend's contract tests (no server needed)
-pnpm test:contract   # the Backend contract suite against the fake and local Supabase (needs `supabase start`)
+pnpm test            # content checks, app tests and the fake Backend's contract tests (no server needed)
+pnpm test:contract   # the Backend contract suite and content-table access rules against local Supabase (needs `supabase start`)
 ```

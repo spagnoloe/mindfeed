@@ -2,12 +2,17 @@
   "name": "@mindfeed/content",
   "version": "0.0.0",
   "private": true,
+  "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "node --test",
+    "seed:generate": "node scripts/write-seed.ts",
+    "test:contract": "node --test src/contentTables.db.ts"
   },
   "devDependencies": {
+    "@types/node": "^24.19.2",
     "typescript": "~6.0.3"
   }
 }
