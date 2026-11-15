@@ -160,6 +160,39 @@ export function createSupabaseBackend({ url, anonKey, storage }: SupabaseBackend
         const { error } = await client.rpc('set_interests', { topic_ids: topicIds });
         if (error) throw dataError(error);
       },
+      async getLikedIdeas() {
+        const userId = await signedInUserId();
+        const { data, error } = await client
+          .from('likes')
+          .select(`idea:ideas!inner(${IDEA_COLUMNS})`)
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false });
+        if (error) throw dataError(error);
+        return (data as unknown as { idea: IdeaRow }[]).map((row) => toIdea(row.idea));
+      },
+      async like(ideaId) {
+        const userId = await signedInUserId();
+        // Already liked: the existing row, and its place in Liked Ideas, stay as they are.
+        const { error } = await client
+          .from('likes')
+          .upsert({ user_id: userId, idea_id: ideaId }, { onConflict: 'user_id,idea_id', ignoreDuplicates: true });
+        if (error) throw dataError(error);
+      },
+      async unlike(ideaId) {
+        const userId = await signedInUserId();
+        const { error } = await client.from('likes').delete().eq('user_id', userId).eq('idea_id', ideaId);
+        if (error) throw dataError(error);
+      },
+      async isLiked(ideaId) {
+        const userId = await signedInUserId();
+        const { count, error } = await client
+          .from('likes')
+          .select('idea_id', { count: 'exact', head: true })
+          .eq('user_id', userId)
+          .eq('idea_id', ideaId);
+        if (error) throw dataError(error);
+        return (count ?? 0) > 0;
+      },
     },
   };
 }

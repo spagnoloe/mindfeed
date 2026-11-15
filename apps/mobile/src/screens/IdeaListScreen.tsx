@@ -1,4 +1,3 @@
-import { useRouter } from 'expo-router';
 import type { ReactNode } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -7,6 +6,7 @@ import { BackHeader } from '@/design/BackHeader';
 import { IdeaRow } from '@/design/IdeaRow';
 import { InkPill } from '@/design/InkPill';
 import { palette, textStyle } from '@/design/theme';
+import { useOpenInTab } from '@/navigation/useOpenInTab';
 
 /**
  * The layout the Topic and Book screens share (the prototype's `rList`): an eyebrow, a title and
@@ -27,7 +27,7 @@ export function IdeaListScreen({
   ideas: Idea[];
   rowSubtitle: (idea: Idea) => string;
 }) {
-  const router = useRouter();
+  const { openIdea } = useOpenInTab();
 
   return (
     <View style={styles.screen}>
@@ -49,7 +49,7 @@ export function IdeaListScreen({
               key={idea.id}
               title={idea.title}
               subtitle={rowSubtitle(idea)}
-              onPress={() => router.push({ pathname: '/idea/[id]', params: { id: idea.id } })}
+              onPress={() => openIdea(idea.id)}
             />
           ))}
         </View>

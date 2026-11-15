@@ -1,7 +1,8 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { useBook, useIdea } from '@/backend/content';
+import { useIsLiked, useToggleLike } from '@/backend/likes';
 import { BackHeader } from '@/design/BackHeader';
 import { BookCover } from '@/design/BookCover';
 import { Icon } from '@/design/Icon';
@@ -9,18 +10,22 @@ import { PillButton } from '@/design/PillButton';
 import { PressableSurface } from '@/design/PressableSurface';
 import { ScreenStatus } from '@/design/ScreenStatus';
 import { palette, textStyle, topicTint } from '@/design/theme';
+import { useOpenInTab } from '@/navigation/useOpenInTab';
 
 import { ideaCount } from './ideaCount';
 
 /**
  * Idea Detail, pushed within the current tab. The Topic chip and the Source card open the Topic
- * and the Book. Like and Add to stack are shown but do nothing yet.
+ * and the Book. Like likes or unlikes the Idea at once, with no confirmation, and turns ink-filled
+ * "Liked" while liked. Add to stack is shown but does nothing yet.
  */
 export function IdeaScreen() {
-  const router = useRouter();
+  const { openTopic, openBook } = useOpenInTab();
   const { id } = useLocalSearchParams<{ id: string }>();
   const idea = useIdea(id);
   const book = useBook(idea.data?.book.id);
+  const liked = useIsLiked(id);
+  const toggleLike = useToggleLike();
 
   return (
     <View style={styles.screen}>
@@ -34,7 +39,7 @@ export function IdeaScreen() {
           <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
             <PressableSurface
               accessibilityLabel={`Topic: ${idea.data.topic.name}`}
-              onPress={() => router.push({ pathname: '/topic/[id]', params: { id: idea.data.topic.id } })}
+              onPress={() => openTopic(idea.data.topic.id)}
               style={[styles.topicChip, { backgroundColor: topicTint(idea.data.topic.hue, 0.01) }]}
             >
               <Text style={styles.topicLabel}>{idea.data.topic.name}</Text>
@@ -45,7 +50,7 @@ export function IdeaScreen() {
             <Text style={styles.explanation}>{idea.data.explanation}</Text>
             <PressableSurface
               accessibilityLabel={`Source: ${idea.data.book.title}`}
-              onPress={() => router.push({ pathname: '/book/[id]', params: { id: idea.data.book.id } })}
+              onPress={() => openBook(idea.data.book.id)}
               style={styles.source}
             >
               <View style={styles.sourceRow}>
@@ -63,7 +68,15 @@ export function IdeaScreen() {
             </PressableSurface>
           </ScrollView>
           <View style={styles.actions}>
-            <PillButton label="Like" icon="favorite" tone="white" size="bar" onPress={() => {}} style={styles.action} />
+            <PillButton
+              label={liked ? 'Liked' : 'Like'}
+              icon="favorite"
+              iconFilled={liked}
+              tone={liked ? 'ink' : 'white'}
+              size="bar"
+              onPress={() => toggleLike.mutate({ idea: idea.data, like: !liked })}
+              style={styles.action}
+            />
             <PillButton label="Add to stack" icon="library_add" size="bar" onPress={() => {}} style={styles.action} />
           </View>
         </>

@@ -6,7 +6,8 @@ import { colors, palette } from './theme';
 /**
  * A round, bordered icon button (back, the Home feed's up/down, Like and Add to stack on a feed Idea, Stack edit/delete).
  * It has no press effect: it flashes `acc` while touched and acts immediately. A disabled one
- * (the feed's "up" on the first card) greys its icon and does nothing.
+ * (the feed's "up" on the first card) greys its icon and does nothing. A `selected` one (a liked
+ * Idea's heart) reports it to accessibility; its look comes from `color` and `filled`.
  */
 export function RoundIconButton({
   icon,
@@ -17,6 +18,7 @@ export function RoundIconButton({
   color = palette.ink,
   filled = false,
   disabled = false,
+  selected,
 }: {
   icon: IconName;
   accessibilityLabel: string;
@@ -27,12 +29,13 @@ export function RoundIconButton({
   color?: string;
   filled?: boolean;
   disabled?: boolean;
+  selected?: boolean;
 }) {
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
-      accessibilityState={disabled ? { disabled } : undefined}
+      accessibilityState={disabled || selected !== undefined ? { disabled, selected } : undefined}
       disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [
