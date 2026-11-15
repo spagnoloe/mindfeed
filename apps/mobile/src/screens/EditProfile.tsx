@@ -3,13 +3,13 @@ import { Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useSaveProfile } from '@/backend/profile';
-import { AuthError, MIN_PASSWORD_LENGTH, type Profile } from '@/backend/types';
+import { AuthError, MIN_PASSWORD_LENGTH, type PasswordChange, type Profile } from '@/backend/types';
 import { SectionHeading } from '@/design/headings';
 import { PillButton } from '@/design/PillButton';
 import { TextField } from '@/design/TextField';
 import { colors, palette, textStyle } from '@/design/theme';
 
-type Draft = Profile & { currentPassword: string; newPassword: string };
+type Draft = Profile & PasswordChange;
 
 /** The prototype's checks, in its order. Returns the error to show, or null when the form can be saved. */
 function validate(draft: Draft): string | null {

@@ -19,8 +19,9 @@ const newSeed = () => Math.random().toString(36).slice(2);
 /** Home: the endless feed, one full-height card at a time. New Interests start it over from the top. */
 export default function HomeScreen() {
   const { data: session } = useSession();
-  const { data: interests = [] } = useInterests(session?.userId);
-  return <Feed key={[...interests].sort().join()} />;
+  // Each save of the Interests updates them, even to the same Topics, and starts the feed over.
+  const { dataUpdatedAt } = useInterests(session?.userId);
+  return <Feed key={dataUpdatedAt} />;
 }
 
 function Feed() {

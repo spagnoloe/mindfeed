@@ -93,7 +93,7 @@ describe('changing the password in Edit profile', () => {
     return form;
   }
 
-  test('a wrong current password shows "Current password is incorrect." and changes nothing', async () => {
+  test('a wrong current password shows "Current password is incorrect." and keeps the old password', async () => {
     const form = await changePassword('not-my-password', 'readmore2');
 
     expect(await form.findByRole('alert')).toHaveTextContent('Current password is incorrect.');

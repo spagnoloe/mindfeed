@@ -48,10 +48,11 @@ const loggedOutEmailKey = ['loggedOutEmail'] as const;
 export function useLogOut() {
   const { auth } = useBackend();
   const queryClient = useQueryClient();
+  const { data: session } = useSession();
 
   return useMutation({
-    mutationFn: async (email: string) => {
-      queryClient.setQueryData(loggedOutEmailKey, email);
+    mutationFn: async () => {
+      queryClient.setQueryData(loggedOutEmailKey, session?.email);
       await auth.logOut();
     },
     onError: () => queryClient.removeQueries({ queryKey: loggedOutEmailKey }),

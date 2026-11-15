@@ -19,8 +19,9 @@ export function useProfile() {
 }
 
 /**
- * Saves Edit profile: when `password` is given, the new password first, so a wrong current
- * password saves nothing; then the name and bio, which Profile shows straight away.
+ * Saves Edit profile: the name and bio, which Profile shows straight away, then, when `password`
+ * is given, the new password. The profile goes first because saving it again is harmless, so
+ * after a failed password change the user can fix the password and simply save again.
  */
 export function useSaveProfile() {
   const { auth, userData } = useBackend();
@@ -29,9 +30,9 @@ export function useSaveProfile() {
 
   return useMutation({
     mutationFn: async ({ profile, password }: { profile: Profile; password?: PasswordChange }) => {
-      if (password) await auth.changePassword(password);
       const saved = await userData.updateProfile(profile);
       queryClient.setQueryData(profileKey(session?.userId), saved);
+      if (password) await auth.changePassword(password);
     },
   });
 }

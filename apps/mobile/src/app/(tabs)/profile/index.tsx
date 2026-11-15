@@ -70,7 +70,7 @@ export default function ProfileScreen() {
             confirmLabel="Log out"
             onConfirm={() => {
               close();
-              if (session) logOut.mutate(session.email);
+              logOut.mutate();
             }}
             onCancel={close}
           />
