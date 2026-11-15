@@ -203,9 +203,9 @@ export function createFakeBackend(): Backend {
         return summarise(stack);
       },
       async deleteStack(stackId) {
-        const stack = ownStack(stackId);
         const account = signedInAccount();
-        account.stacks = account.stacks.filter((candidate) => candidate !== stack);
+        if (!account.stacks.some((stack) => stack.id === stackId)) throw new Error(`No Stack ${stackId}`);
+        account.stacks = account.stacks.filter((stack) => stack.id !== stackId);
       },
     },
   };

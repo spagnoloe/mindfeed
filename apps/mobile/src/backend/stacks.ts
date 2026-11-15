@@ -50,6 +50,13 @@ export function useStacksWith(ideaId: string | undefined): string[] | undefined 
   return data;
 }
 
+/** The Stack with the Idea added at the end (`add: true`) or taken out. */
+function withIdea(stack: Stack, idea: Idea, add: boolean): Stack {
+  const others = stack.ideas.filter((candidate) => candidate.id !== idea.id);
+  const ideas = add ? [...others, idea] : others;
+  return { ...stack, ideas, ideaCount: ideas.length, firstTopic: ideas[0]?.topic ?? null };
+}
+
 /**
  * Adds an Idea to a Stack (`add: true`) or takes it out. The tick and the Stack's count change at
  * once and are undone if saving fails (ADR-0001). Like Likes, quick taps save at once, and the
@@ -77,21 +84,20 @@ export function useToggleStack() {
 
       const others = (previousWith ?? []).filter((id) => id !== stack.id);
       queryClient.setQueryData<string[]>(withKey, add ? [...others, stack.id] : others);
+      // With the Stack's Ideas loaded, its new first Idea is known, so the card and the Stack
+      // screen agree; without them, an Idea added to an empty Stack is its first, and otherwise
+      // the first stays until the resync.
+      const detail = previousDetail && withIdea(previousDetail, idea, add);
+      if (detail) queryClient.setQueryData<Stack>(detailKey, detail);
       queryClient.setQueryData<StackSummary[]>(stacksKey(userId), (stacks) =>
         stacks?.map((candidate) => {
           if (candidate.id !== stack.id) return candidate;
+          if (detail) return { ...candidate, ideaCount: detail.ideaCount, firstTopic: detail.firstTopic };
           const ideaCount = Math.max(0, candidate.ideaCount + (add ? 1 : -1));
-          // An Idea added to an empty Stack is its first; otherwise the first stays until the resync.
           const firstTopic = ideaCount === 0 ? null : (candidate.firstTopic ?? idea.topic);
           return { ...candidate, ideaCount, firstTopic };
         }),
       );
-      queryClient.setQueryData<Stack>(detailKey, (detail) => {
-        if (!detail) return detail;
-        const others = detail.ideas.filter((candidate) => candidate.id !== idea.id);
-        const ideas = add ? [...others, idea] : others;
-        return { ...detail, ideas, ideaCount: ideas.length, firstTopic: ideas[0]?.topic ?? null };
-      });
       return { previousStacks, previousWith, previousDetail, withKey, detailKey };
     },
     onError: (_error, _variables, context) => {
