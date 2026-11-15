@@ -33,6 +33,8 @@ export const colors = {
   tabInactive: '#7a756c',
   /** Destructive dialog CTA and validation errors. */
   danger: oklch(0.54, 0.17, 28),
+  /** A liked Idea's heart on a feed card and in Liked Ideas. */
+  liked: oklch(0.58, 0.18, 25),
   /** Behind the bottom sheet and dialogs. */
   backdrop: 'rgba(31,29,26,0.32)',
 };

@@ -129,9 +129,79 @@ export function describeBackendContract(name: string, makeBackend: () => Backend
     });
 
     test('user data is out of reach when nobody is signed in', async () => {
+      const ideaId = content.ideas[0].id;
       await expect(backend.userData.getProfile()).rejects.toThrow();
       await expect(backend.userData.getInterests()).rejects.toThrow();
       await expect(backend.userData.setInterests(content.topics.slice(0, 3).map((topic) => topic.id))).rejects.toThrow();
+      await expect(backend.userData.getLikedIdeas()).rejects.toThrow();
+      await expect(backend.userData.like(ideaId)).rejects.toThrow();
+      await expect(backend.userData.unlike(ideaId)).rejects.toThrow();
+      await expect(backend.userData.isLiked(ideaId)).rejects.toThrow();
+    });
+
+    describe('Likes', () => {
+      const [first, second, third] = content.ideas.map((idea) => idea.id);
+      const likedIds = async () => (await backend.userData.getLikedIdeas()).map((idea) => idea.id);
+
+      beforeEach(async () => {
+        await backend.auth.signUp(newAccount());
+      });
+
+      test('a new account has none', async () => {
+        await expect(backend.userData.getLikedIdeas()).resolves.toEqual([]);
+        await expect(backend.userData.isLiked(first)).resolves.toBe(false);
+      });
+
+      test('Liked Ideas are newest first, each with its Topic and Book', async () => {
+        await backend.userData.like(first);
+        await backend.userData.like(second);
+        await backend.userData.like(third);
+
+        expect(await likedIds()).toEqual([third, second, first]);
+        const [newest] = await backend.userData.getLikedIdeas();
+        await expect(backend.content.getIdea(third)).resolves.toEqual(newest);
+      });
+
+      test('like and unlike change is-liked', async () => {
+        await backend.userData.like(first);
+        await expect(backend.userData.isLiked(first)).resolves.toBe(true);
+        await expect(backend.userData.isLiked(second)).resolves.toBe(false);
+
+        await backend.userData.unlike(first);
+        await expect(backend.userData.isLiked(first)).resolves.toBe(false);
+        expect(await likedIds()).toEqual([]);
+      });
+
+      test('liking twice keeps one Like, in its first place, and unliking twice is harmless', async () => {
+        await backend.userData.like(first);
+        await backend.userData.like(second);
+        await backend.userData.like(first);
+
+        expect(await likedIds()).toEqual([second, first]);
+
+        await backend.userData.unlike(second);
+        await backend.userData.unlike(second);
+        await backend.userData.unlike(third);
+        expect(await likedIds()).toEqual([first]);
+      });
+    });
+
+    test("each user sees and changes only their own Likes", async () => {
+      const [first, second] = content.ideas.map((idea) => idea.id);
+      const maya = newAccount();
+      await backend.auth.signUp(maya);
+      await backend.userData.like(first);
+      await backend.auth.logOut();
+
+      await backend.auth.signUp(newAccount());
+      await expect(backend.userData.getLikedIdeas()).resolves.toEqual([]);
+      await expect(backend.userData.isLiked(first)).resolves.toBe(false);
+      await backend.userData.like(second);
+      await backend.userData.unlike(first);
+      await backend.auth.logOut();
+
+      await backend.auth.logIn(maya);
+      expect((await backend.userData.getLikedIdeas()).map((idea) => idea.id)).toEqual([first]);
     });
 
     describe('Home feed', () => {

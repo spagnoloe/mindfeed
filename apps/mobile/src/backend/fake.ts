@@ -2,7 +2,8 @@ import { content } from '@mindfeed/content';
 
 import { AuthError, MAX_FEED_PAGE, MIN_INTERESTS, type Backend, type Book, type Idea, type Profile, type Session, type Topic } from './types';
 
-type Account = { session: Session; password: string; profile: Profile; interests: string[] };
+/** `likes` holds Idea ids, newest first. */
+type Account = { session: Session; password: string; profile: Profile; interests: string[]; likes: string[] };
 
 const topics = content.topics
   .map(({ id, name, hue }) => ({ id, name, hue }))
@@ -57,7 +58,7 @@ export function createFakeBackend(): Backend {
       async signUp({ name, email, password }) {
         if (accounts.has(email)) throw new AuthError('email-taken');
         const session = { userId: crypto.randomUUID(), email };
-        accounts.set(email, { session, password, profile: { name, bio: '' }, interests: [] });
+        accounts.set(email, { session, password, profile: { name, bio: '' }, interests: [], likes: [] });
         setSession(session);
         return session;
       },
@@ -115,6 +116,21 @@ export function createFakeBackend(): Backend {
         const distinct = [...new Set(topicIds)];
         if (distinct.length < MIN_INTERESTS) throw new Error(`Pick at least ${MIN_INTERESTS} Interests`);
         account.interests = distinct;
+      },
+      async getLikedIdeas() {
+        return signedInAccount().likes.map((id) => copy(ideas.find((idea) => idea.id === id)!));
+      },
+      async like(ideaId) {
+        const account = signedInAccount();
+        if (!ideas.some((idea) => idea.id === ideaId)) throw new Error(`No Idea ${ideaId}`);
+        if (!account.likes.includes(ideaId)) account.likes.unshift(ideaId);
+      },
+      async unlike(ideaId) {
+        const account = signedInAccount();
+        account.likes = account.likes.filter((id) => id !== ideaId);
+      },
+      async isLiked(ideaId) {
+        return signedInAccount().likes.includes(ideaId);
       },
     },
   };

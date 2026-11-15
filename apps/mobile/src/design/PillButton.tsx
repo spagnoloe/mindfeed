@@ -8,7 +8,7 @@ import { colors, palette, textStyle, type FontWeight } from './theme';
 const tones = {
   /** Auth CTA, Log out. */
   accent: { backgroundColor: palette.acc, color: palette.ink },
-  /** Onboarding and Interests CTAs. */
+  /** Onboarding and Interests CTAs, and a liked Idea's Liked button. */
   ink: { backgroundColor: palette.ink, color: colors.white },
   /** Cancel, Done, Save, New stack, Add to stack. */
   card: { backgroundColor: palette.card, color: palette.ink },
@@ -40,6 +40,8 @@ export type PillButtonProps = {
   /** Overrides the size's label weight, where the prototype differs (e.g. a dialog's confirm is 700). */
   weight?: FontWeight;
   icon?: IconName;
+  /** The icon's filled look (`'FILL' 1`), e.g. a liked Idea's heart. */
+  iconFilled?: boolean;
   /**
    * The prototype's greyed-out look ("Pick 2 more", an empty stack form's Create). Only a look:
    * the pill still presses and calls `onPress`, and the caller decides what that does, as the
@@ -51,7 +53,7 @@ export type PillButtonProps = {
 };
 
 /** A raised pill button. */
-export function PillButton({ label, onPress, tone = 'card', size = 'large', weight, icon, dimmed = false, style }: PillButtonProps) {
+export function PillButton({ label, onPress, tone = 'card', size = 'large', weight, icon, iconFilled = false, dimmed = false, style }: PillButtonProps) {
   const { height, fontSize, weight: sizeWeight, iconSize } = sizes[size];
   const { backgroundColor, color, borderColor } = dimmed ? dimmedLook(tone) : { ...tones[tone], borderColor: palette.ink };
 
@@ -66,7 +68,7 @@ export function PillButton({ label, onPress, tone = 'card', size = 'large', weig
       ]}
     >
       <View style={styles.content}>
-        {icon && <Icon name={icon} size={iconSize} color={color} />}
+        {icon && <Icon name={icon} size={iconSize} color={color} filled={iconFilled} />}
         <Text style={[textStyle(fontSize, weight ?? sizeWeight), { color }]}>{label}</Text>
       </View>
     </PressableSurface>

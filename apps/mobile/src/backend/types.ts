@@ -108,6 +108,13 @@ export interface UserDataRepository {
   getInterests(): Promise<string[]>;
   /** Replaces all the user's Interests. Rejects, changing nothing, with fewer than {@link MIN_INTERESTS}. */
   setInterests(topicIds: string[]): Promise<void>;
+  /** The user's Liked Ideas, newest Like first. */
+  getLikedIdeas(): Promise<Idea[]>;
+  /** Likes the Idea. Liking an Idea already liked changes nothing, so it keeps its place in Liked Ideas. */
+  like(ideaId: string): Promise<void>;
+  /** Unlikes the Idea. Unliking an Idea not liked changes nothing. */
+  unlike(ideaId: string): Promise<void>;
+  isLiked(ideaId: string): Promise<boolean>;
 }
 
 export type Backend = {

@@ -88,10 +88,27 @@ describe('Supabase row-level security on user data', () => {
     expect(data).toHaveLength(3);
   });
 
-  test('nobody signed in reads no profiles or Interests', async () => {
+  test("a user can't read, add to or remove another user's Likes", async () => {
+    const [liked, other] = content.ideas.map((idea) => idea.id);
+    const like = await maya.client.from('likes').insert({ user_id: maya.userId, idea_id: liked });
+    if (like.error) throw new Error(like.error.message);
+
+    expect((await sam.client.from('likes').select('idea_id').eq('user_id', maya.userId)).data).toEqual([]);
+
+    const inserted = await sam.client.from('likes').insert({ user_id: maya.userId, idea_id: other });
+    expect(inserted.error?.code).toBe('42501');
+
+    const deleted = await sam.client.from('likes').delete().eq('user_id', maya.userId).select();
+    expect(deleted.data).toEqual([]);
+
+    expect((await maya.client.from('likes').select('idea_id')).data).toEqual([{ idea_id: liked }]);
+  });
+
+  test('nobody signed in reads no profiles, Interests or Likes', async () => {
     const anon = createClient(connection.url, connection.anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
 
     expect((await anon.from('profiles').select('id')).data).toEqual([]);
     expect((await anon.from('interests').select('topic_id')).data).toEqual([]);
+    expect((await anon.from('likes').select('idea_id')).data).toEqual([]);
   });
 });
