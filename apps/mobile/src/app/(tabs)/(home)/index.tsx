@@ -1,4 +1,3 @@
-import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { FlatList, StyleSheet, Text, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 
@@ -8,6 +7,7 @@ import type { Idea } from '@/backend/types';
 import { RoundIconButton } from '@/design/RoundIconButton';
 import { ScreenStatus } from '@/design/ScreenStatus';
 import { palette, textStyle } from '@/design/theme';
+import { useOpenInTab } from '@/navigation/useOpenInTab';
 import { FeedCard } from '@/screens/FeedCard';
 
 /** The next page loads once the user is this many cards from the end (the prototype's 4). */
@@ -18,7 +18,7 @@ const newSeed = () => Math.random().toString(36).slice(2);
 
 /** Home: the endless feed, one full-height card at a time. */
 export default function HomeScreen() {
-  const router = useRouter();
+  const { openIdea } = useOpenInTab();
   const { data: session } = useSession();
   const [seed] = useState(newSeed);
   const feed = useFeed(session?.userId, seed);
@@ -73,7 +73,7 @@ export default function HomeScreen() {
               testID={`feed-card-${position}`}
               idea={item}
               height={height}
-              onOpen={() => router.push({ pathname: '/idea/[id]', params: { id: item.id } })}
+              onOpen={() => openIdea(item.id)}
             />
           )}
           getItemLayout={(_data, position) => ({ length: height, offset: height * position, index: position })}

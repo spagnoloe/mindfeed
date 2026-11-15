@@ -5,7 +5,7 @@
 -- deletes it. created_at orders Liked Ideas, newest first.
 
 create table public.likes (
-  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  user_id uuid not null references auth.users (id) on delete cascade,
   idea_id uuid not null references public.ideas (id) on delete cascade,
   created_at timestamptz not null default now(),
   primary key (user_id, idea_id)

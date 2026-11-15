@@ -30,7 +30,9 @@ export function useIsLiked(ideaId: string | undefined): boolean {
 }
 
 /**
- * Likes or unlikes an Idea. The change shows at once and is undone if saving it fails (ADR-0001).
+ * Likes (`like: true`) or unlikes an Idea. The change shows at once and is undone if saving it
+ * fails (ADR-0001). Quick taps send their saves at once rather than one after another; whichever
+ * lands last wins, and the list resyncs with it when the last one settles.
  */
 export function useToggleLike() {
   const { userData } = useBackend();
@@ -40,12 +42,12 @@ export function useToggleLike() {
 
   return useMutation({
     mutationKey: toggleLikeKey,
-    mutationFn: ({ idea, liked }: { idea: Idea; liked: boolean }) => (liked ? userData.like(idea.id) : userData.unlike(idea.id)),
-    onMutate: async ({ idea, liked }) => {
+    mutationFn: ({ idea, like }: { idea: Idea; like: boolean }) => (like ? userData.like(idea.id) : userData.unlike(idea.id)),
+    onMutate: async ({ idea, like }) => {
       await queryClient.cancelQueries({ queryKey: key });
       const previous = queryClient.getQueryData<Idea[]>(key);
       const others = (previous ?? []).filter((candidate) => candidate.id !== idea.id);
-      queryClient.setQueryData<Idea[]>(key, liked ? [idea, ...others] : others);
+      queryClient.setQueryData<Idea[]>(key, like ? [idea, ...others] : others);
       return { previous };
     },
     onError: (_error, _variables, context) => {

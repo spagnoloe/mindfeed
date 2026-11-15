@@ -114,6 +114,7 @@ export interface UserDataRepository {
   like(ideaId: string): Promise<void>;
   /** Unlikes the Idea. Unliking an Idea not liked changes nothing. */
   unlike(ideaId: string): Promise<void>;
+  /** Whether the user has liked the Idea; false for an Idea that doesn't exist. */
   isLiked(ideaId: string): Promise<boolean>;
 }
 

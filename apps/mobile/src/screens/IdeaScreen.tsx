@@ -74,7 +74,7 @@ export function IdeaScreen() {
               iconFilled={liked}
               tone={liked ? 'ink' : 'white'}
               size="bar"
-              onPress={() => toggleLike.mutate({ idea: idea.data, liked: !liked })}
+              onPress={() => toggleLike.mutate({ idea: idea.data, like: !liked })}
               style={styles.action}
             />
             <PillButton label="Add to stack" icon="library_add" size="bar" onPress={() => {}} style={styles.action} />

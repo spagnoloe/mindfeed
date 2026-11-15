@@ -76,7 +76,7 @@ function LikedIdeas() {
         body={`“${unliking?.title ?? ''}” will be removed from your Liked ideas.`}
         confirmLabel="Remove"
         onConfirm={() => {
-          if (unliking) toggleLike.mutate({ idea: unliking, liked: false });
+          if (unliking) toggleLike.mutate({ idea: unliking, like: false });
           setUnliking(null);
         }}
         onCancel={() => setUnliking(null)}

@@ -55,7 +55,7 @@ export function FeedCard({ idea, height, onOpen, testID }: { idea: Idea; height:
             selected={liked}
             filled={liked}
             color={liked ? colors.liked : palette.ink}
-            onPress={() => toggleLike.mutate({ idea, liked: !liked })}
+            onPress={() => toggleLike.mutate({ idea, like: !liked })}
           />
         </View>
       </PressableSurface>
