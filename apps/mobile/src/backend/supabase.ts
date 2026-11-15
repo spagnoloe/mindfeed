@@ -62,9 +62,12 @@ const feedRowToIdea = (row: FeedRow): Idea => ({
   book: { id: row.book_id, title: row.book_title, author: row.book_author, isbn: row.book_isbn, coverHue: row.book_cover_hue },
 });
 
+/** A Topic with its Ideas counted by PostgREST. */
+type TopicCountRow = { id: string; name: string; hue: number; ideas: { count: number }[] };
+
 /** A row of the `search_content` function. `detail` is a Book's author or an Idea's Book title. */
 type SearchRow = {
-  kind: 'topic' | 'book' | 'idea';
+  kind: SearchResult['kind'];
   id: string;
   title: string;
   detail: string | null;
@@ -170,7 +173,7 @@ export function createSupabaseBackend({ url, anonKey, storage }: SupabaseBackend
       async getTopicSummaries() {
         const { data, error } = await client.from('topics').select('id, name, hue, ideas(count)').order('name');
         if (error) throw dataError(error);
-        return (data as unknown as { id: string; name: string; hue: number; ideas: { count: number }[] }[]).map(({ ideas, ...topic }) => ({
+        return (data as unknown as TopicCountRow[]).map(({ ideas, ...topic }) => ({
           ...topic,
           ideaCount: ideas[0]?.count ?? 0,
         }));

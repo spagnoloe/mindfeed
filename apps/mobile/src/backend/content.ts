@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query';
 
 import { useBackend } from './BackendProvider';
 
@@ -31,7 +31,7 @@ export function useBooks() {
   return useQuery({ queryKey: ['books'], queryFn: () => content.getBooks(), staleTime: Infinity });
 }
 
-/** The search results for `query`. Disabled while it is blank. */
+/** The search results for `query`, keeping the last results while the next ones load. Disabled while it is blank. */
 export function useSearch(query: string) {
   const { content } = useBackend();
   const trimmed = query.trim();
@@ -39,6 +39,7 @@ export function useSearch(query: string) {
     queryKey: ['search', trimmed.toLowerCase()],
     queryFn: () => content.search(trimmed),
     enabled: trimmed !== '',
+    placeholderData: keepPreviousData,
     staleTime: Infinity,
   });
 }

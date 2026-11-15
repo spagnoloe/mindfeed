@@ -77,36 +77,31 @@ export default function ExploreScreen() {
 }
 
 /** `value`, once it has stopped changing for `delayMs`. */
-function useSettled<T>(value: T, delayMs: number): T {
-  const [settled, setSettled] = useState(value);
+function useDebounced<T>(value: T, delayMs: number): T {
+  const [debounced, setDebounced] = useState(value);
   useEffect(() => {
-    const timer = setTimeout(() => setSettled(value), delayMs);
+    const timer = setTimeout(() => setDebounced(value), delayMs);
     return () => clearTimeout(timer);
   }, [value, delayMs]);
-  return settled;
+  return debounced;
 }
 
-const RESULT_LOOK: Record<SearchResult['kind'], { icon: IconName; background: (result: SearchResult) => string }> = {
-  topic: { icon: 'tag', background: (result) => topicTint(result.kind === 'topic' ? result.hue : 0, 0.01) },
-  book: { icon: 'menu_book', background: () => palette.card },
-  idea: { icon: 'lightbulb', background: () => colors.white },
-};
-
-const resultSubtitle = (result: SearchResult) => {
+/** What a search result's row shows: its title and subtitle, and its icon and the tile behind it. */
+function resultRow(result: SearchResult): { title: string; subtitle: string; icon: IconName; tile: string } {
   switch (result.kind) {
     case 'topic':
-      return `Topic · ${ideaCount(result.ideaCount)}`;
+      return { title: result.name, subtitle: `Topic · ${ideaCount(result.ideaCount)}`, icon: 'tag', tile: topicTint(result.hue, 0.01) };
     case 'book':
-      return `Book · ${result.author}`;
+      return { title: result.title, subtitle: `Book · ${result.author}`, icon: 'menu_book', tile: palette.card };
     case 'idea':
-      return `Idea · ${result.bookTitle}`;
+      return { title: result.title, subtitle: `Idea · ${result.bookTitle}`, icon: 'lightbulb', tile: colors.white };
   }
-};
+}
 
 /** The hint before the user types, then the results for what they typed once they pause. */
 function SearchResults({ query }: { query: string }) {
-  const settled = useSettled(query, SEARCH_DELAY_MS);
-  const search = useSearch(settled);
+  const debounced = useDebounced(query, SEARCH_DELAY_MS);
+  const search = useSearch(debounced);
   const { openTopic, openBook, openIdea } = useOpenInTab();
   const open = { topic: openTopic, book: openBook, idea: openIdea };
 
@@ -114,29 +109,28 @@ function SearchResults({ query }: { query: string }) {
   if (!query.trim()) body = <Text style={styles.searchNote}>Search across ideas, topics and books.</Text>;
   else if (search.isError) body = <ScreenStatus error onRetry={() => void search.refetch()} />;
   else if (!search.data) body = null;
-  else if (search.data.length === 0) body = <Text style={styles.searchNote}>No results for “{settled}”.</Text>;
+  else if (search.data.length === 0) body = <Text style={styles.searchNote}>No results for “{debounced}”.</Text>;
   else {
     body = search.data.map((result) => {
-      const title = result.kind === 'topic' ? result.name : result.title;
-      const look = RESULT_LOOK[result.kind];
+      const row = resultRow(result);
       return (
         <Pressable
           key={`${result.kind}-${result.id}`}
           testID="search-result"
           accessibilityRole="button"
-          accessibilityLabel={title}
+          accessibilityLabel={row.title}
           onPress={() => open[result.kind](result.id)}
           style={styles.result}
         >
-          <View style={[styles.resultIcon, { backgroundColor: look.background(result) }]}>
-            <Icon name={look.icon} size={20} />
+          <View style={[styles.resultIcon, { backgroundColor: row.tile }]}>
+            <Icon name={row.icon} size={20} />
           </View>
           <View style={styles.resultText}>
             <Text testID="search-result-title" style={styles.resultTitle}>
-              {title}
+              {row.title}
             </Text>
             <Text testID="search-result-subtitle" style={styles.resultSubtitle}>
-              {resultSubtitle(result)}
+              {row.subtitle}
             </Text>
           </View>
         </Pressable>
@@ -147,6 +141,7 @@ function SearchResults({ query }: { query: string }) {
   return <View style={styles.results}>{body}</View>;
 }
 
+/** Browsing: the Trending topics, a row of Book covers, and every Topic with its Idea count. */
 function Browse() {
   const trending = useTrendingTopics();
   const books = useBooks();
@@ -239,7 +234,7 @@ const styles = StyleSheet.create({
   },
   searchInput: { ...textStyle(16, 400), flex: 1, minWidth: 0, height: '100%', paddingVertical: 0, paddingHorizontal: 0, color: palette.ink },
   cancel: { paddingVertical: 8 },
-  cancelLabel: { ...textStyle(15, 600), color: palette.ink },
+  cancelLabel: { ...textStyle(15, 600), lineHeight: 18, color: palette.ink },
   results: { marginTop: -8 },
   // The design's `line-height: normal` for 17px, as the browser renders it.
   searchNote: { ...textStyle(17, 400), lineHeight: 21, paddingVertical: 12, paddingHorizontal: 4, color: palette.mut },
@@ -252,9 +247,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: palette.line,
   },
+  // 40px as a content box, so 43 with its border.
   resultIcon: {
-    width: 40,
-    height: 40,
+    width: 43,
+    height: 43,
     borderRadius: 12,
     borderWidth: 1.5,
     borderColor: palette.line,
@@ -273,7 +269,8 @@ const styles = StyleSheet.create({
   shelfContent: { paddingTop: 8, paddingHorizontal: 20, paddingBottom: 24, gap: 14 },
   topicList: { backgroundColor: palette.card, borderWidth: 1.5, borderColor: palette.line, borderRadius: 20, overflow: 'hidden' },
   topicRow: { gap: 14, paddingVertical: 14, paddingLeft: 16, paddingRight: 14, borderBottomWidth: 1, borderBottomColor: palette.line },
-  dot: { width: 14, height: 14, borderRadius: 7, borderWidth: 1.5, borderColor: palette.ink },
+  // 14px as a content box, so 17 with its border, like the search bar.
+  dot: { width: 17, height: 17, borderRadius: 8.5, borderWidth: 1.5, borderColor: palette.ink },
   // `line-height: normal` for 16px and 15px, as the browser renders them.
   topicName: { ...textStyle(16, 600), lineHeight: 20, flex: 1, color: palette.ink },
   // The design's `line-height: normal` for 13px, as the browser renders it.

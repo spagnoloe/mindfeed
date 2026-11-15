@@ -14,7 +14,8 @@ const tabRoutes = {
 export function useOpenInTab() {
   const router = useRouter();
   const segments = useSegments() as string[];
-  const routes = segments[1] === 'library' || segments[1] === 'explore' ? tabRoutes[segments[1]] : tabRoutes.home;
+  const tab = segments[1];
+  const routes = Object.hasOwn(tabRoutes, tab) ? tabRoutes[tab as keyof typeof tabRoutes] : tabRoutes.home;
 
   return {
     openIdea: (id: string) => router.push({ pathname: routes.idea, params: { id } }),

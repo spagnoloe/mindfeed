@@ -160,14 +160,14 @@ export function createFakeBackend(): Backend {
         return ideas.filter((idea) => idea.book.id === bookId).sort(byTitle).map(copy);
       },
       async search(query) {
-        const q = query.trim().toLowerCase();
-        if (!q) return [];
-        const has = (...texts: string[]) => texts.some((text) => text.toLowerCase().includes(q));
+        const needle = query.trim().toLowerCase();
+        if (!needle) return [];
+        const matches = (...texts: string[]) => texts.some((text) => text.toLowerCase().includes(needle));
         return [
-          ...topics.filter((topic) => has(topic.name)).map((topic): SearchResult => ({ kind: 'topic', ...topicSummary(topic) })),
-          ...booksByTitle.filter((book) => has(book.title, book.author)).map(({ id, title, author }): SearchResult => ({ kind: 'book', id, title, author })),
+          ...topics.filter((topic) => matches(topic.name)).map((topic): SearchResult => ({ kind: 'topic', ...topicSummary(topic) })),
+          ...booksByTitle.filter((book) => matches(book.title, book.author)).map(({ id, title, author }): SearchResult => ({ kind: 'book', id, title, author })),
           ...ideas
-            .filter((idea) => has(idea.title, idea.explanation))
+            .filter((idea) => matches(idea.title, idea.explanation))
             .sort(byTitle)
             .map(({ id, title, book }): SearchResult => ({ kind: 'idea', id, title, bookTitle: book.title })),
         ];
