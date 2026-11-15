@@ -41,10 +41,59 @@ export interface AuthService {
 
 export type Topic = { id: string; name: string; hue: number };
 
+export type Book = {
+  id: string;
+  title: string;
+  author: string;
+  /** Fetches the cover from Open Library. */
+  isbn: string;
+  /** The hue of the coloured placeholder shown behind (or instead of) the cover. */
+  coverHue: number;
+};
+
+/** A Book with how many Ideas it has (the Source card's and the Book screen's "N ideas"). */
+export type BookSummary = Book & { ideaCount: number };
+
+/** An Idea with its Topic and Book, as every screen shows it. */
+export type Idea = {
+  id: string;
+  title: string;
+  explanation: string;
+  topic: Topic;
+  book: Book;
+};
+
+/** Where a page of the Home feed starts and how long it is. */
+export type FeedPageRequest = {
+  /** Shuffles the feed: the same seed always gives the same order. The app picks one per session. */
+  seed: string;
+  /** The position of the page's first Idea in the endless feed, from 0. */
+  offset: number;
+  limit: number;
+};
+
+/** The most Ideas one feed page returns. */
+export const MAX_FEED_PAGE = 100;
+
 /** Read-only Ideas, Books, Topics and search. */
 export interface ContentRepository {
   /** Every Topic, ordered by name. */
   getTopics(): Promise<Topic[]>;
+  /**
+   * A page of the signed-in user's Home feed: every Idea in their Interests, shuffled, then every
+   * other Idea, shuffled. Positions past the last Idea wrap around to the first, so the feed never
+   * ends and a page always has `limit` Ideas (an Idea can appear twice in one page). `limit` is at
+   * most {@link MAX_FEED_PAGE}.
+   */
+  getFeedPage(request: FeedPageRequest): Promise<Idea[]>;
+  /** Rejects when there is no such Idea. */
+  getIdea(ideaId: string): Promise<Idea>;
+  /** A Topic's Ideas, ordered by title. */
+  getTopicIdeas(topicId: string): Promise<Idea[]>;
+  /** Rejects when there is no such Book. */
+  getBook(bookId: string): Promise<BookSummary>;
+  /** A Book's Ideas, ordered by title. */
+  getBookIdeas(bookId: string): Promise<Idea[]>;
 }
 
 export type Profile = { name: string; bio: string };

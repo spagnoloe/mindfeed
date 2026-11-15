@@ -1,6 +1,6 @@
 import { createClient, type AuthError as SupabaseAuthError, type SupportedStorage, type User } from '@supabase/supabase-js';
 
-import { AuthError, type Backend, type Session } from './types';
+import { AuthError, type Backend, type Book, type Idea, type Session } from './types';
 
 export type SupabaseBackendOptions = {
   url: string;
@@ -28,6 +28,39 @@ function toAuthError(error: SupabaseAuthError): AuthError {
 function dataError(error: { message: string }): Error {
   return new Error(error.message, { cause: error });
 }
+
+const BOOK_COLUMNS = 'id, title, author, isbn, cover_hue';
+const IDEA_COLUMNS = `id, title, explanation, topic:topics!inner(id, name, hue), book:books!inner(${BOOK_COLUMNS})`;
+
+type BookRow = { id: string; title: string; author: string; isbn: string; cover_hue: number };
+type IdeaRow = { id: string; title: string; explanation: string; topic: { id: string; name: string; hue: number }; book: BookRow };
+
+/** A row of the `feed_page` function: an Idea with its Topic and Book flattened into columns. */
+type FeedRow = {
+  id: string;
+  title: string;
+  explanation: string;
+  topic_id: string;
+  topic_name: string;
+  topic_hue: number;
+  book_id: string;
+  book_title: string;
+  book_author: string;
+  book_isbn: string;
+  book_cover_hue: number;
+};
+
+const toBook = ({ id, title, author, isbn, cover_hue }: BookRow): Book => ({ id, title, author, isbn, coverHue: cover_hue });
+
+const toIdea = ({ id, title, explanation, topic, book }: IdeaRow): Idea => ({ id, title, explanation, topic, book: toBook(book) });
+
+const feedRowToIdea = (row: FeedRow): Idea => ({
+  id: row.id,
+  title: row.title,
+  explanation: row.explanation,
+  topic: { id: row.topic_id, name: row.topic_name, hue: row.topic_hue },
+  book: { id: row.book_id, title: row.book_title, author: row.book_author, isbn: row.book_isbn, coverHue: row.book_cover_hue },
+});
 
 export function createSupabaseBackend({ url, anonKey, storage }: SupabaseBackendOptions): Backend {
   const client = createClient(url, anonKey, {
@@ -82,6 +115,32 @@ export function createSupabaseBackend({ url, anonKey, storage }: SupabaseBackend
         const { data, error } = await client.from('topics').select('id, name, hue').order('name');
         if (error) throw dataError(error);
         return data;
+      },
+      async getFeedPage({ seed, offset, limit }) {
+        const { data, error } = await client.rpc('feed_page', { seed, start_at: offset, page_size: limit });
+        if (error) throw dataError(error);
+        return (data as FeedRow[]).map(feedRowToIdea);
+      },
+      async getIdea(ideaId) {
+        const { data, error } = await client.from('ideas').select(IDEA_COLUMNS).eq('id', ideaId).single();
+        if (error) throw dataError(error);
+        return toIdea(data as unknown as IdeaRow);
+      },
+      async getTopicIdeas(topicId) {
+        const { data, error } = await client.from('ideas').select(IDEA_COLUMNS).eq('topic_id', topicId).order('title');
+        if (error) throw dataError(error);
+        return (data as unknown as IdeaRow[]).map(toIdea);
+      },
+      async getBook(bookId) {
+        const { data, error } = await client.from('books').select(`${BOOK_COLUMNS}, ideas(count)`).eq('id', bookId).single();
+        if (error) throw dataError(error);
+        const { ideas, ...book } = data as unknown as BookRow & { ideas: { count: number }[] };
+        return { ...toBook(book), ideaCount: ideas[0]?.count ?? 0 };
+      },
+      async getBookIdeas(bookId) {
+        const { data, error } = await client.from('ideas').select(IDEA_COLUMNS).eq('book_id', bookId).order('title');
+        if (error) throw dataError(error);
+        return (data as unknown as IdeaRow[]).map(toIdea);
       },
     },
     userData: {
