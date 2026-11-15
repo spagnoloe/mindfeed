@@ -10,7 +10,7 @@ import { StackIcon } from '@/design/StackIcon';
 import { colors, palette, textStyle } from '@/design/theme';
 
 import { ideaCount } from './ideaCount';
-import { NewStackForm } from './NewStackForm';
+import { StackForm } from './StackForm';
 
 /**
  * The Add to stack sheet for one Idea: a New stack row, then every Stack with a check that files
@@ -55,7 +55,7 @@ export function AddToStack({ idea, onClose }: { idea: Idea; onClose: () => void 
           )}
         </View>
       </BottomSheet>
-      {creating && <NewStackForm idea={idea} onClose={() => setCreating(false)} />}
+      {creating && <StackForm idea={idea} onClose={() => setCreating(false)} />}
     </>
   );
 }

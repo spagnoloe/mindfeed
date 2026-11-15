@@ -22,6 +22,8 @@ const tones = {
 const sizes = {
   /** Full-width CTAs at the bottom of a screen ("Create account", "Continue"). */
   large: { height: 56, fontSize: 17, weight: 700, iconSize: 22 },
+  /** The Library's New stack button. */
+  wide: { height: 56, fontSize: 16, weight: 700, iconSize: 22 },
   /** "Log out". */
   medium: { height: 52, fontSize: 16, weight: 700, iconSize: 22 },
   /** The Like and Add to stack buttons at the bottom of an Idea. */

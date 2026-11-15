@@ -126,6 +126,15 @@ export interface UserDataRepository {
   removeFromStack(stackId: string, ideaId: string): Promise<void>;
   /** The ids of the user's Stacks that hold the Idea, in no particular order. */
   getStacksWith(ideaId: string): Promise<string[]>;
+  /** One of the user's Stacks with its Ideas, first added first. Rejects for a Stack that isn't the user's. */
+  getStack(stackId: string): Promise<Stack>;
+  /**
+   * Renames the Stack and replaces its description, both trimmed, and returns it. Rejects, changing
+   * nothing, when the name is blank or the Stack isn't the user's.
+   */
+  updateStack(stackId: string, details: StackDetails): Promise<StackSummary>;
+  /** Deletes the Stack and its entries; its Ideas, and their Likes, stay. Rejects for a Stack that isn't the user's. */
+  deleteStack(stackId: string): Promise<void>;
 }
 
 /** A Stack as lists show it, without its Ideas. */
@@ -138,6 +147,11 @@ export type StackSummary = {
   /** The Topic of the Idea added to the Stack first, which tints the Stack's icon; null for an empty Stack. */
   firstTopic: Topic | null;
 };
+
+/** A Stack with its Ideas, first added first. */
+export type Stack = StackSummary & { ideas: Idea[] };
+
+export type StackDetails = { name: string; description: string };
 
 export type NewStack = { name: string; description?: string; ideaId?: string };
 

@@ -57,7 +57,7 @@ test('from a card, New stack → name → "Create & add" files the Idea in a new
   expect(card.getByRole('button', { name: 'Add to stack' })).not.toBeSelected();
 
   await user.press(sheet.getByRole('button', { name: 'New stack' }));
-  const form = within(await screen.findByTestId('new-stack-form'));
+  const form = within(await screen.findByTestId('stack-form'));
   expect(form.getByText('Will be added')).toBeOnTheScreen();
   expect(form.getByText(idea.title)).toBeOnTheScreen();
   await user.type(form.getByLabelText('Name'), 'Thinking better');
@@ -65,7 +65,7 @@ test('from a card, New stack → name → "Create & add" files the Idea in a new
   await user.press(form.getByRole('button', { name: 'Create & add' }));
 
   // Back on the sheet, the new Stack is at the top, ticked.
-  await waitFor(() => expect(screen.queryByTestId('new-stack-form')).not.toBeOnTheScreen());
+  await waitFor(() => expect(screen.queryByTestId('stack-form')).not.toBeOnTheScreen());
   expect(screen.getAllByRole('checkbox').map((row) => row.props.accessibilityLabel)).toEqual(['Thinking better', 'Work']);
   expect(stackRow('Thinking better')).toBeChecked();
   expect(within(stackRow('Thinking better')).getByText('1 idea')).toBeOnTheScreen();
@@ -135,13 +135,13 @@ test('an empty name says "Give your stack a name." and creates nothing', async (
   const { user } = await openHome();
   const { idea, sheet } = await openSheetFromCard(user);
   await user.press(sheet.getByRole('button', { name: 'New stack' }));
-  const form = within(await screen.findByTestId('new-stack-form'));
+  const form = within(await screen.findByTestId('stack-form'));
 
   await user.type(form.getByLabelText('Name'), '   ');
   await user.press(form.getByRole('button', { name: 'Create & add' }));
 
   expect(await form.findByText('Give your stack a name.')).toBeOnTheScreen();
-  expect(screen.getByTestId('new-stack-form')).toBeOnTheScreen();
+  expect(screen.getByTestId('stack-form')).toBeOnTheScreen();
   await expect(backend.userData.getStacks()).resolves.toEqual([]);
   await expect(stackIds(idea.id)).resolves.toEqual([]);
 
@@ -155,13 +155,13 @@ test('Cancel and Android back leave the form without creating a Stack', async ()
   const { sheet } = await openSheetFromCard(user);
 
   await user.press(sheet.getByRole('button', { name: 'New stack' }));
-  await user.type(within(await screen.findByTestId('new-stack-form')).getByLabelText('Name'), 'Work');
-  await user.press(within(screen.getByTestId('new-stack-form')).getByRole('button', { name: 'Cancel' }));
-  await waitFor(() => expect(screen.queryByTestId('new-stack-form')).not.toBeOnTheScreen());
+  await user.type(within(await screen.findByTestId('stack-form')).getByLabelText('Name'), 'Work');
+  await user.press(within(screen.getByTestId('stack-form')).getByRole('button', { name: 'Cancel' }));
+  await waitFor(() => expect(screen.queryByTestId('stack-form')).not.toBeOnTheScreen());
 
   await user.press(sheet.getByRole('button', { name: 'New stack' }));
-  await fireEvent(await screen.findByTestId('new-stack-form'), 'requestClose');
-  expect(screen.queryByTestId('new-stack-form')).not.toBeOnTheScreen();
+  await fireEvent(await screen.findByTestId('stack-form'), 'requestClose');
+  expect(screen.queryByTestId('stack-form')).not.toBeOnTheScreen();
 
   expect(screen.getByText('Add to stack')).toBeOnTheScreen();
   await expect(backend.userData.getStacks()).resolves.toEqual([]);

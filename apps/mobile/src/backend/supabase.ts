@@ -261,6 +261,46 @@ export function createSupabaseBackend({ url, anonKey, storage }: SupabaseBackend
         if (error) throw dataError(error);
         return data.map((row) => row.stack_id as string);
       },
+      async getStack(stackId) {
+        await signedInUserId();
+        // Row-level security hides other users' Stacks, so one of theirs reads as missing.
+        const [summary, entries] = await Promise.all([
+          client.from('stack_summaries').select(STACK_SUMMARY_COLUMNS).eq('id', stackId).maybeSingle(),
+          client
+            .from('stack_ideas')
+            .select(`idea:ideas!inner(${IDEA_COLUMNS})`)
+            .eq('stack_id', stackId)
+            .order('added_at')
+            .order('idea_id'),
+        ]);
+        if (summary.error) throw dataError(summary.error);
+        if (entries.error) throw dataError(entries.error);
+        if (!summary.data) throw new Error(`No Stack ${stackId}`);
+        const ideas = (entries.data as unknown as { idea: IdeaRow }[]).map((row) => toIdea(row.idea));
+        return { ...toStackSummary(summary.data as StackSummaryRow), ideas };
+      },
+      async updateStack(stackId, { name, description }) {
+        await signedInUserId();
+        if (!name.trim()) throw new Error('A Stack needs a name');
+        // Row-level security leaves other users' Stacks untouched, so nothing comes back for them.
+        const updated = await client
+          .from('stacks')
+          .update({ name: name.trim(), description: description.trim() })
+          .eq('id', stackId)
+          .select('id');
+        if (updated.error) throw dataError(updated.error);
+        if (updated.data.length === 0) throw new Error(`No Stack ${stackId}`);
+        const { data, error } = await client.from('stack_summaries').select(STACK_SUMMARY_COLUMNS).eq('id', stackId).single();
+        if (error) throw dataError(error);
+        return toStackSummary(data as StackSummaryRow);
+      },
+      async deleteStack(stackId) {
+        await signedInUserId();
+        // As with updates, nothing comes back for another user's Stack.
+        const { data, error } = await client.from('stacks').delete().eq('id', stackId).select('id');
+        if (error) throw dataError(error);
+        if (data.length === 0) throw new Error(`No Stack ${stackId}`);
+      },
     },
   };
 }

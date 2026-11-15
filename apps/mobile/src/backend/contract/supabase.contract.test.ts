@@ -122,10 +122,27 @@ describe('Supabase row-level security on user data', () => {
     expect(renamed.data ?? []).toEqual([]);
     const deleted = await sam.client.from('stack_ideas').delete().eq('stack_id', stackId).select();
     expect(deleted.data).toEqual([]);
+    const removed = await sam.client.from('stacks').delete().eq('id', stackId).select();
+    expect(removed.data).toEqual([]);
 
     expect((await maya.client.from('stack_summaries').select('name, idea_count').eq('id', stackId)).data).toEqual([
       { name: 'Thinking better', idea_count: 1 },
     ]);
+  });
+
+  test('a user can change only the name and description of their own Stack', async () => {
+    const created = await maya.client.rpc('create_stack', { stack_name: 'Work' });
+    if (created.error) throw new Error(created.error.message);
+    const stackId = created.data as string;
+
+    const moved = await maya.client.from('stacks').update({ user_id: sam.userId }).eq('id', stackId);
+    // 42501 again: the column grant leaves user_id and created_at read-only.
+    expect(moved.error?.code).toBe('42501');
+    const redated = await maya.client.from('stacks').update({ created_at: '2000-01-01' }).eq('id', stackId);
+    expect(redated.error?.code).toBe('42501');
+
+    const renamed = await maya.client.from('stacks').update({ name: 'Deep work', description: 'Focus' }).eq('id', stackId).select('name, description');
+    expect(renamed.data).toEqual([{ name: 'Deep work', description: 'Focus' }]);
   });
 
   test('nobody signed in reads no profiles, Interests or Likes', async () => {

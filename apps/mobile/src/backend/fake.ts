@@ -14,10 +14,10 @@ import {
 } from './types';
 
 /** A Stack's `ideas` are Idea ids, first added first. */
-type Stack = { id: string; name: string; description: string; ideas: string[] };
+type StoredStack = { id: string; name: string; description: string; ideas: string[] };
 
 /** `likes` holds Idea ids, newest first; `stacks` holds Stacks, newest first. */
-type Account = { session: Session; password: string; profile: Profile; interests: string[]; likes: string[]; stacks: Stack[] };
+type Account = { session: Session; password: string; profile: Profile; interests: string[]; likes: string[]; stacks: StoredStack[] };
 
 const topics = content.topics
   .map(({ id, name, hue }) => ({ id, name, hue }))
@@ -46,7 +46,7 @@ const ideaById = (ideaId: string) => {
   return idea;
 };
 
-const summarise = ({ id, name, description, ideas: ideaIds }: Stack): StackSummary => ({
+const summarise = ({ id, name, description, ideas: ideaIds }: StoredStack): StackSummary => ({
   id,
   name,
   description,
@@ -76,6 +76,12 @@ export function createFakeBackend(): Backend {
     const account = current && accounts.get(current.email);
     if (!account) throw new AuthError('unknown', 'Not signed in');
     return account;
+  }
+
+  function ownStack(stackId: string): StoredStack {
+    const stack = signedInAccount().stacks.find((candidate) => candidate.id === stackId);
+    if (!stack) throw new Error(`No Stack ${stackId}`);
+    return stack;
   }
 
   return {
@@ -172,8 +178,7 @@ export function createFakeBackend(): Backend {
         return summarise(stack);
       },
       async addToStack(stackId, ideaId) {
-        const stack = signedInAccount().stacks.find((candidate) => candidate.id === stackId);
-        if (!stack) throw new Error(`No Stack ${stackId}`);
+        const stack = ownStack(stackId);
         ideaById(ideaId);
         if (!stack.ideas.includes(ideaId)) stack.ideas.push(ideaId);
       },
@@ -185,6 +190,22 @@ export function createFakeBackend(): Backend {
         return signedInAccount()
           .stacks.filter((stack) => stack.ideas.includes(ideaId))
           .map((stack) => stack.id);
+      },
+      async getStack(stackId) {
+        const stack = ownStack(stackId);
+        return { ...summarise(stack), ideas: stack.ideas.map((id) => copy(ideaById(id))) };
+      },
+      async updateStack(stackId, { name, description }) {
+        const stack = ownStack(stackId);
+        if (!name.trim()) throw new Error('A Stack needs a name');
+        stack.name = name.trim();
+        stack.description = description.trim();
+        return summarise(stack);
+      },
+      async deleteStack(stackId) {
+        const stack = ownStack(stackId);
+        const account = signedInAccount();
+        account.stacks = account.stacks.filter((candidate) => candidate !== stack);
       },
     },
   };
