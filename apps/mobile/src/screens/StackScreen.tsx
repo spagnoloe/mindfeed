@@ -14,7 +14,8 @@ import { StackForm } from './StackForm';
 
 /**
  * One of the user's Stacks: its name, description and Ideas, first added first. Edit opens the
- * Edit stack form; delete, and each row's remove button, ask first.
+ * Edit stack form; delete, and each row's remove button, ask first. A confirmed delete returns to
+ * the Stacks once it's saved; if it fails, the screen stays and says so.
  */
 export function StackScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -24,6 +25,7 @@ export function StackScreen() {
   const deleteStack = useDeleteStack();
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [deleteFailed, setDeleteFailed] = useState(false);
   const [removing, setRemoving] = useState<Idea | null>(null);
 
   if (query.isError) {
@@ -49,9 +51,11 @@ export function StackScreen() {
         title={stack.name}
         description={stack.description}
         subtitle={ideaCount(stack.ideaCount)}
+        // The prototype has no copy for a Stack that fails to delete.
+        error={deleteFailed ? "Couldn't delete this stack. Please try again." : undefined}
         headerActions={
           <>
-            <RoundIconButton icon="edit" accessibilityLabel="Rename stack" onPress={() => setEditing(true)} />
+            <RoundIconButton icon="edit" accessibilityLabel="Edit stack" onPress={() => setEditing(true)} />
             <RoundIconButton icon="delete" accessibilityLabel="Delete stack" onPress={() => setDeleting(true)} />
           </>
         }
@@ -79,8 +83,9 @@ export function StackScreen() {
         confirmLabel="Delete"
         onConfirm={() => {
           setDeleting(false);
-          deleteStack.mutate(stack.id);
-          router.back();
+          if (deleteStack.isPending) return;
+          setDeleteFailed(false);
+          deleteStack.mutate(stack.id, { onSuccess: () => router.back(), onError: () => setDeleteFailed(true) });
         }}
         onCancel={() => setDeleting(false)}
       />

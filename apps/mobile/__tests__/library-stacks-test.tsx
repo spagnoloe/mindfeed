@@ -62,7 +62,7 @@ async function openStack(user: ReturnType<typeof userEvent.setup>, name: string)
   expect(await screen.findByText('Stack')).toBeOnTheScreen();
 }
 
-test('Rename → Edit stack is prefilled, and Save shows the new name and description on the Stack screen and in the list', async () => {
+test('Edit → Edit stack is prefilled, and Save shows the new name and description on the Stack screen and in the list', async () => {
   await backend.userData.createStack({ name: 'Work', description: 'For work', ideaId: content.ideas[0].id });
   const { user } = await openStacks();
   await openStack(user, 'Work');
@@ -70,7 +70,7 @@ test('Rename → Edit stack is prefilled, and Save shows the new name and descri
   expect(screen.getByText('For work')).toBeOnTheScreen();
   expect(screen.getByText('1 idea')).toBeOnTheScreen();
 
-  await user.press(screen.getByRole('button', { name: 'Rename stack' }));
+  await user.press(screen.getByRole('button', { name: 'Edit stack' }));
   const form = within(await screen.findByTestId('stack-form'));
   expect(form.getByText('Edit stack')).toBeOnTheScreen();
   expect(form.getByLabelText('Name')).toHaveDisplayValue('Work');
@@ -159,16 +159,26 @@ test('deleting asks first, then returns to the list without the Stack', async ()
   await expect(backend.content.getIdea(content.ideas[0].id)).resolves.toMatchObject({ id: content.ideas[0].id });
 });
 
-test('a delete that fails to save puts the Stack back in the list', async () => {
+test('a delete that fails stays on the Stack and says so, and trying again deletes it', async () => {
   await backend.userData.createStack({ name: 'Work' });
   const { user } = await openStacks();
   await openStack(user, 'Work');
   jest.spyOn(backend.userData, 'deleteStack').mockRejectedValueOnce(new Error('Network request failed'));
+  const deleteWork = async () => {
+    await user.press(screen.getByRole('button', { name: 'Delete stack' }));
+    await user.press(within(await screen.findByTestId('confirm-dialog')).getByRole('button', { name: 'Delete' }));
+    await settlePress();
+  };
 
-  await user.press(screen.getByRole('button', { name: 'Delete stack' }));
-  await user.press(within(await screen.findByTestId('confirm-dialog')).getByRole('button', { name: 'Delete' }));
-  await settlePress();
+  await deleteWork();
+
+  expect(await screen.findByText("Couldn't delete this stack. Please try again.")).toBeOnTheScreen();
+  expect(screen.getByRole('header')).toHaveTextContent('Work');
+  await expect(backend.userData.getStacks()).resolves.toMatchObject([{ name: 'Work' }]);
+
+  await deleteWork();
 
   expect(await screen.findByText('library.')).toBeOnTheScreen();
-  await waitFor(() => expect(stackNames()).toEqual(['Work']));
+  await waitFor(() => expect(stackNames()).toEqual([]));
+  expect(screen.queryByText("Couldn't delete this stack. Please try again.")).not.toBeOnTheScreen();
 });

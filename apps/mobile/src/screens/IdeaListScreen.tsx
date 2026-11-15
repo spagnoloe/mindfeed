@@ -5,20 +5,21 @@ import type { Idea } from '@/backend/types';
 import { BackHeader } from '@/design/BackHeader';
 import { IdeaRow, type IdeaRowAction } from '@/design/IdeaRow';
 import { InkPill } from '@/design/InkPill';
-import { palette, textStyle } from '@/design/theme';
+import { colors, palette, textStyle } from '@/design/theme';
 import { useOpenInTab } from '@/navigation/useOpenInTab';
 
 /**
  * The layout the Topic, Book and Stack screens share (the prototype's `rList`): an eyebrow, a
  * title, an optional description and a muted line, an optional cover beside them, then a row per
- * Idea that opens it, or `empty` when there are none. A Stack adds header actions and a button on
- * each row.
+ * Idea that opens it, or `empty` when there are none. A Stack adds header actions, a button on
+ * each row, and an `error` line under the count when deleting it fails.
  */
 export function IdeaListScreen({
   eyebrow,
   title,
   description,
   subtitle,
+  error,
   cover,
   headerActions,
   ideas,
@@ -30,6 +31,7 @@ export function IdeaListScreen({
   title: string;
   description?: string;
   subtitle: string;
+  error?: string;
   cover?: ReactNode;
   headerActions?: ReactNode;
   ideas: Idea[];
@@ -52,6 +54,11 @@ export function IdeaListScreen({
             </Text>
             {description ? <Text style={styles.description}>{description}</Text> : null}
             <Text style={styles.subtitle}>{subtitle}</Text>
+            {error !== undefined && (
+              <Text accessibilityRole="alert" style={styles.error}>
+                {error}
+              </Text>
+            )}
           </View>
         </View>
         {ideas.length === 0 && empty !== undefined && (
@@ -94,6 +101,8 @@ const styles = StyleSheet.create({
   title: { ...textStyle(34, 700, { lineHeight: 1.02, letterSpacing: -0.035 }), color: palette.ink },
   description: { ...textStyle(17, 400, { lineHeight: 1.5 }), color: palette.ink2 },
   subtitle: { ...textStyle(14, 400), lineHeight: 17, color: palette.mut },
+  // The stack form's error style.
+  error: { ...textStyle(14, 600), lineHeight: 17, color: colors.danger },
   empty: {
     paddingVertical: 32,
     paddingHorizontal: 16,

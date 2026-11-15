@@ -158,10 +158,7 @@ export function useUpdateStack() {
   });
 }
 
-/**
- * Deletes a Stack. It leaves the Stacks at once and comes back if deleting fails, like an
- * optimistic Like (ADR-0001), so the Stack screen can return to the list straight away.
- */
+/** Deletes a Stack, and once that's saved, takes it out of the Stacks. */
 export function useDeleteStack() {
   const { userData } = useBackend();
   const queryClient = useQueryClient();
@@ -170,17 +167,10 @@ export function useDeleteStack() {
 
   return useMutation({
     mutationFn: (stackId: string) => userData.deleteStack(stackId),
-    onMutate: async (stackId) => {
+    onSuccess: async (_data, stackId) => {
       await queryClient.cancelQueries({ queryKey: stacksKey(userId) });
-      const previousStacks = queryClient.getQueryData<StackSummary[]>(stacksKey(userId));
       queryClient.setQueryData<StackSummary[]>(stacksKey(userId), (stacks) => stacks?.filter((stack) => stack.id !== stackId));
-      return { previousStacks };
-    },
-    onError: (_error, _stackId, context) => {
-      if (context) queryClient.setQueryData(stacksKey(userId), context.previousStacks);
-    },
-    onSuccess: (_data, stackId) => {
-      queryClient.removeQueries({ queryKey: stackKey(userId, stackId) });
+      // The Stack screen's own query is left to expire: removing it now would refetch the deleted Stack before the screen closes.
       void queryClient.invalidateQueries({ queryKey: allStacksWithKey(userId) });
     },
   });
