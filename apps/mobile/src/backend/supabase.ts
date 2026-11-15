@@ -148,6 +148,16 @@ export function createSupabaseBackend({ url, anonKey, storage }: SupabaseBackend
         const { error } = await client.auth.signOut();
         if (error) throw toAuthError(error);
       },
+      async changePassword({ currentPassword, newPassword }) {
+        const { data } = await client.auth.getSession();
+        const email = data.session?.user.email;
+        if (!email) throw new AuthError('unknown', 'Not signed in');
+        // Signing in again as the same user checks the password and keeps the session.
+        const check = await client.auth.signInWithPassword({ email, password: currentPassword });
+        if (check.error) throw check.error.code === 'invalid_credentials' ? new AuthError('wrong-password', check.error.message) : toAuthError(check.error);
+        const { error } = await client.auth.updateUser({ password: newPassword });
+        if (error) throw toAuthError(error);
+      },
       onSessionChange(listener) {
         const { data } = client.auth.onAuthStateChange((_event, session) => {
           listener(session ? toSession(session.user) : null);
@@ -219,6 +229,18 @@ export function createSupabaseBackend({ url, anonKey, storage }: SupabaseBackend
       async getProfile() {
         const userId = await signedInUserId();
         const { data, error } = await client.from('profiles').select('name, bio').eq('id', userId).single();
+        if (error) throw dataError(error);
+        return data;
+      },
+      async updateProfile({ name, bio }) {
+        const userId = await signedInUserId();
+        // A blank name breaks the table's check, which rejects the update.
+        const { data, error } = await client
+          .from('profiles')
+          .update({ name: name.trim(), bio: bio.trim() })
+          .eq('id', userId)
+          .select('name, bio')
+          .single();
         if (error) throw dataError(error);
         return data;
       },

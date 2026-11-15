@@ -65,6 +65,19 @@ describe('Supabase row-level security on user data', () => {
     expect((await maya.client.from('profiles').select('name').single()).data).toEqual({ name: 'Maya Lin' });
   });
 
+  test('a user can change only the name and bio of their own profile', async () => {
+    const moved = await maya.client.from('profiles').update({ id: sam.userId }).eq('id', maya.userId);
+    // 42501: the column grant leaves id read-only.
+    expect(moved.error?.code).toBe('42501');
+
+    const blank = await maya.client.from('profiles').update({ name: ' ' }).eq('id', maya.userId);
+    // 23514: Postgres's check_violation.
+    expect(blank.error?.code).toBe('23514');
+
+    const renamed = await maya.client.from('profiles').update({ name: 'Maya Lin', bio: 'Reads' }).eq('id', maya.userId).select('name, bio');
+    expect(renamed.data).toEqual([{ name: 'Maya Lin', bio: 'Reads' }]);
+  });
+
   test("a user can't add to or remove another user's Interests", async () => {
     const inserted = await sam.client.from('interests').insert({ user_id: maya.userId, topic_id: topicIds[5] });
     // 42501 is Postgres's insufficient_privilege, which row-level security raises.
