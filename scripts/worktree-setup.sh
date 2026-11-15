@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Prepares a new git worktree: copies git-ignored local files from the main checkout, then
-# starts Docker and local Supabase so they're up before an agent needs them, and resets the
-# database to this worktree's migrations and seed.
+# starts Docker and local Supabase so they're up before an agent needs them, resets the database
+# to this worktree's migrations and seed, and creates the dev account (scripts/dev-account.mjs).
 # Run from inside the worktree (Orca runs its setup script there).
 set -euo pipefail
 
@@ -84,6 +84,7 @@ reset_database() {
     sleep 1
   done
   echo "Reset the local database to this worktree's migrations and seed."
+  node "$worktree_root/scripts/dev-account.mjs" || echo "warning: the dev account wasn't created" >&2
 }
 
 supabase_up_within() {
