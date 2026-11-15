@@ -13,7 +13,7 @@ description: Run the Mindfeed app on the Android emulator, drive it, and screens
 - After an action that animates (a press has a 150ms delay), wait about a second before `shot`.
 - `stop` when the check is done.
 
-Signing up against local Supabase needs `supabase status` to be running.
+The app talks to local Supabase. To reach the screens behind sign-in without onboarding, log in as `maya@example.com` / `readmore` (Interests already picked). `supabase db reset` deletes that account; `node scripts/dev-account.mjs` brings it back.
 
 ## The design
 
